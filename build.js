@@ -29,3 +29,5 @@ export const storage = getStorage(app);
 fs.mkdirSync('./js', { recursive: true });
 fs.writeFileSync('./js/firebase-config.js', configContent.trim());
 console.log("Конфігурація Firebase успішно згенерована на сервері!");
+
+// примусовий пуш
