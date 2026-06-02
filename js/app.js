@@ -1,6 +1,6 @@
 import './auth.js';
 import { db, auth } from './firebase-config.js';
-import { collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { collection, addDoc, getDocs, doc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 document.addEventListener('DOMContentLoaded', () => {
     
@@ -260,6 +260,47 @@ document.addEventListener('DOMContentLoaded', () => {
                 const postElement = document.createElement('div');
                 postElement.classList.add('post-card');
                 
+                // 1. Рахуємо лайки та перевіряємо, чи є серед них лайк поточного юзера
+                const likedBy = post.likedBy || []; // Беремо список лайків або створюємо порожній
+                const likesCount = likedBy.length;
+                // Перевіряємо, чи юзер авторизований і чи є його ID у списку лайків
+                const isLikedByMe = auth.currentUser ? likedBy.includes(auth.currentUser.uid) : false;
+                
+                postElement.innerHTML = `
+    <div class="post-header">
+        <div class="avatar-wrapper" style="width: 40px; height: 40px; overflow: hidden; border-radius: 50%;">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop" style="width: 100%; height: 100%; object-fit: cover;" alt="Avatar">
+        </div>
+        <div class="post-user-info">
+            <span class="post-username">${post.authorName}</span>
+            <span class="post-time">${timeString}</span>
+        </div>
+        
+        ${isAuthor 
+            ? `<button class="post-menu-btn delete-post-btn" title="Видалити"><i class="bi bi-trash" style="color: #ff4444;"></i></button>` 
+            : `<button class="post-menu-btn"><i class="bi bi-three-dots"></i></button>`
+        }
+    </div>
+    
+    <div class="post-content">
+        ${post.text ? `<p class="post-text">${post.text}</p>` : ''}
+        ${mediaHTML}
+    </div>
+
+    <div class="post-actions">
+        <!-- ОНОВЛЕНА КНОПКА ЛАЙКУ -->
+        <button class="action-btn like-btn" data-id="${post.id}">
+            <i class="bi ${isLikedByMe ? 'bi-heart-fill' : 'bi-heart'}" style="${isLikedByMe ? 'color: #ff4444;' : ''}"></i> 
+            <span class="likes-count">${likesCount}</span>
+        </button>
+        <!-- КІНЕЦЬ ОНОВЛЕНОЇ КНОПКИ -->
+        
+        <button class="action-btn"><i class="bi bi-chat"></i> <span>0</span></button>
+        <button class="action-btn"><i class="bi bi-arrow-repeat"></i></button>
+        <button class="action-btn"><i class="bi bi-send"></i></button>
+    </div>
+`;
+
                 postElement.innerHTML = `
                     <div class="post-header">
                         <div class="avatar-wrapper" style="width: 40px; height: 40px; overflow: hidden; border-radius: 50%;">
@@ -314,5 +355,57 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     }
+
+// Слухаємо всі кліки на сторінці
+document.addEventListener('click', async (e) => {
+    // Шукаємо, чи клік був саме по кнопці з класом .like-btn (або по іконці всередині неї)
+    const likeBtn = e.target.closest('.like-btn');
+    if (!likeBtn) return; // Якщо клік по іншому місцю — нічого не робимо
+
+    const user = auth.currentUser;
+    if (!user) {
+        alert("Будь ласка, увійдіть, щоб залишати вподобайки.");
+        return;
+    }
+
+    const postId = likeBtn.dataset.id;
+    const postRef = doc(db, "posts", postId);
+    
+    // Знаходимо іконку та лічильник всередині конкретно цієї кнопки
+    const icon = likeBtn.querySelector('i');
+    const countSpan = likeBtn.querySelector('.likes-count');
+    let currentCount = parseInt(countSpan.textContent);
+    
+    // Перевіряємо поточний стан (чи стоїть вже лайк)
+    const isCurrentlyLiked = icon.classList.contains('bi-heart-fill');
+
+    try {
+        if (isCurrentlyLiked) {
+            // ВІДМІНА ЛАЙКУ
+            // 1. Миттєво міняємо візуал (Optimistic UI)
+            icon.classList.replace('bi-heart-fill', 'bi-heart');
+            icon.style.color = ''; // прибираємо червоний колір
+            countSpan.textContent = currentCount - 1;
+
+            // 2. Відправляємо на сервер команду видалити ID зі списку
+            await updateDoc(postRef, {
+                likedBy: arrayRemove(user.uid)
+            });
+        } else {
+            // СТАВИМО ЛАЙК
+            // 1. Миттєво міняємо візуал
+            icon.classList.replace('bi-heart', 'bi-heart-fill');
+            icon.style.color = '#ff4444'; // червоний колір
+            countSpan.textContent = currentCount + 1;
+
+            // 2. Відправляємо на сервер команду додати ID в список
+            await updateDoc(postRef, {
+                likedBy: arrayUnion(user.uid)
+            });
+        }
+    } catch (error) {
+        console.error("Помилка обробки лайку:", error);
+    }
+});
 
 });
