@@ -14,6 +14,12 @@
     <link rel="stylesheet" href="css/global.css">
     <link rel="stylesheet" href="css/profile.css">
     <link rel="stylesheet" href="css/auth.css">
+
+    <style>
+        /* Бронебійні правила для надійності інтерфейсу */
+        #app { position: relative !important; overflow-x: hidden; }
+        .hidden { display: none !important; }
+    </style>
 </head>
 <body>
 
@@ -21,126 +27,68 @@
         
         <div id="auth-modal" class="auth-modal-overlay hidden">
             <div class="auth-container">
-                <button id="close-auth-btn" class="close-modal-btn">
-                    <i class="bi bi-x-lg"></i>
-                </button>
-
+                <button id="close-auth-btn" class="close-modal-btn"><i class="bi bi-x-lg"></i></button>
                 <div class="auth-header-brand">
                     <h2>Sensu</h2>
                     <p>Простір для творців</p>
                 </div>
-
                 <div class="auth-tabs">
                     <button class="auth-tab-btn active" id="tab-login">Вхід</button>
                     <button class="auth-tab-btn" id="tab-register">Реєстрація</button>
                 </div>
-
                 <form id="auth-form" class="auth-form">
                     <div class="input-group">
                         <i class="bi bi-person input-icon-left"></i>
                         <input type="text" id="auth-username" placeholder="Твій логін (без пробілів)" required autocomplete="off">
                     </div>
-                    
                     <div class="input-group">
                         <i class="bi bi-lock input-icon-left"></i>
                         <input type="password" id="auth-password" placeholder="Пароль (мінімум 6 символів)" required>
                         <i class="bi bi-eye input-icon-right" id="toggle-password-btn"></i>
                     </div>
-
                     <div id="auth-error-message" class="auth-error hidden"></div>
-
                     <button type="submit" class="auth-submit-btn" id="auth-submit-btn">Увійти</button>
                 </form>
             </div>
         </div>
 
-
         <section id="screen-home" class="app-screen active">
-            
             <div class="top-header">
                 <h2>Sensu</h2>
                 <div class="header-actions">
-                    <button class="icon-btn create-post-trigger">
-                        <i class="bi bi-plus-square"></i>
-                    </button>
-                    <button id="open-filter-btn" class="icon-btn">
-                        <i class="bi bi-three-dots"></i>
-                    </button>
-                    <button id="open-search-btn" class="icon-btn">
-                        <i class="bi bi-search"></i>
-                    </button>
+                    <button class="icon-btn create-post-trigger"><i class="bi bi-plus-square"></i></button>
+                    <button id="open-filter-btn" class="icon-btn"><i class="bi bi-three-dots"></i></button>
+                    <button id="open-search-btn" class="icon-btn"><i class="bi bi-search"></i></button>
                 </div>
             </div>
-
             <div class="feed-toggle-wrapper">
                 <div class="feed-toggle">
                     <button class="toggle-btn active">Рекомендації</button>
                     <button class="toggle-btn">Найпопулярніше</button>
                 </div>
             </div>
-
             <div class="feed-container">
-                <div class="post-card">
-                    <div class="post-header">
-                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop" alt="Avatar" class="post-avatar">
-                        <div class="post-user-info">
-                            <span class="post-username">creative_mind</span>
-                            <span class="post-time">2 години тому</span>
-                        </div>
-                        <button class="post-menu-btn"><i class="bi bi-three-dots"></i></button>
-                    </div>
-                    
-                    <div class="post-content">
-                        <p class="post-text">
-                            Нічний шепіт вітру між рядками,<br>
-                            Коли весь світ засинає в імлі.<br>
-                            Ми пишемо всесвіт своїми думками,<br>
-                            Залишивши слід на холодній землі... ✨
-                        </p>
-                    </div>
-
-                    <div class="post-actions">
-                        <button class="action-btn id-like"><i class="bi bi-heart"></i> <span>32</span></button>
-                        <button class="action-btn"><i class="bi bi-chat"></i> <span>8</span></button>
-                        <button class="action-btn"><i class="bi bi-arrow-repeat"></i> <span>3</span></button>
-                        <button class="action-btn"><i class="bi bi-send"></i></button>
-                    </div>
                 </div>
-            </div>
         </section>
 
-
         <section id="screen-messages" class="app-screen">
-            
             <div class="chat-header">
                 <h2>Повідомлення</h2>
                 <button class="icon-btn"><i class="bi bi-pencil-square"></i></button>
             </div>
-
-            <section id="screen-messages" class="app-screen">
-            <div class="chat-header">
-                <h2>Повідомлення</h2>
-                <button class="icon-btn"><i class="bi bi-pencil-square"></i></button>
-            </div>
-
             <div id="dynamic-chat-list" class="chat-list">
                 </div>
         </section>
-        </section>
-
 
         <section id="screen-global" class="app-screen">
-            
             <div class="global-header">
                 <h2>Глобальна</h2>
                 <button class="icon-btn"><i class="bi bi-bell"></i></button>
             </div>
-
             <div class="global-search-container">
                 <i class="bi bi-search search-icon"></i>
                 <input type="text" placeholder="Пошук людей, гуртків, публікацій..." class="global-search-input">
             </div>
-
             <div class="interests-scroll">
                 <button class="interest-tag active">Всі</button>
                 <button class="interest-tag">#дизайн</button>
@@ -149,89 +97,29 @@
                 <button class="interest-tag">#текст</button>
                 <button class="interest-tag add-interest"><i class="bi bi-plus-lg"></i></button>
             </div>
-
             <div class="global-nav">
                 <button class="g-nav-btn active">Стрічка</button>
                 <button class="g-nav-btn">Обмін навичками</button>
                 <button class="g-nav-btn">Гуртки</button>
             </div>
-
-            <div class="feed-toggle-wrapper">
-                <div class="feed-toggle">
-                    <button class="toggle-btn active">Рекомендації</button>
-                    <button class="toggle-btn">Найпопулярніше</button>
-                </div>
-            </div>
-
             <div class="global-content-area">
-                <div class="match-card">
-                    <div class="match-header">
-                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop" alt="User">
-                        <div class="match-info">
-                            <h4>Олена_Art</h4>
-                            <span class="match-percentage"><i class="bi bi-stars"></i> 95% співпадіння</span>
-                        </div>
-                    </div>
-                    <div class="match-skills">
-                        <div class="skill-row">
-                            <span class="skill-label">Шукає:</span>
-                            <span class="skill-value">Веб-розробника (HTML/CSS/JS)</span>
-                        </div>
-                        <div class="skill-row">
-                            <span class="skill-label">Пропонує:</span>
-                            <span class="skill-value">UI/UX Дизайн, Ілюстрації</span>
-                        </div>
-                    </div>
-                    <div class="match-actions">
-                        <button class="connect-btn">Написати</button>
-                        <button class="skip-btn"><i class="bi bi-x-lg"></i></button>
-                    </div>
-                </div>
-
-                <div class="group-card">
-                    <div class="group-icon">
-                        <i class="bi bi-palette"></i>
-                    </div>
-                    <div class="group-details">
-                        <h4>Інді-розробники ігор</h4>
-                        <p>12 учасників • Створюємо візуальну новелу</p>
-                        <div class="group-avatars">
-                            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=50" alt="member">
-                            <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=50" alt="member">
-                            <span class="more-members">+10</span>
-                        </div>
-                    </div>
-                    <button class="join-btn">Вступити</button>
-                </div>
-
-                <button class="create-group-btn">
-                    <i class="bi bi-plus-circle-fill"></i> Створити гурток
-                </button>
+                <p style="text-align: center; color: var(--text-secondary); margin-top: 20px;">Введіть ім'я для пошуку людей...</p>
             </div>
         </section>
 
-
         <section id="screen-profile" class="app-screen">
-            
             <div class="profile-top-bar">
-                <button class="icon-btn create-post-trigger">
-                    <i class="bi bi-plus-square"></i>
-                </button>
-                <button class="icon-btn" id="open-settings-btn">
-                    <i class="bi bi-three-dots"></i>
-                </button>
+                <button class="icon-btn create-post-trigger"><i class="bi bi-plus-square"></i></button>
+                <button class="icon-btn" id="open-settings-btn"><i class="bi bi-three-dots"></i></button>
             </div>
-
             <div class="profile-header">
                 <div class="avatar-wrapper cursor-pointer">
                     <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop" alt="My Avatar" class="profile-main-avatar">
                     <div class="edit-badge"><i class="bi bi-pencil-fill"></i></div>
                 </div>
-
                 <div class="profile-info">
-                    <h3 class="profile-nickname cursor-pointer">creative_mind <i class="bi bi-pencil edit-icon"></i></h3>
+                    <h3 class="profile-nickname cursor-pointer">Користувач <i class="bi bi-pencil edit-icon"></i></h3>
                     <div class="profile-stats">
-                        <div class="profile-stats">
                         <div class="stat-item cursor-pointer" id="my-followers-btn">
                             <span class="stat-number" id="my-followers-count">0</span>
                             <span class="stat-label">читачів</span>
@@ -241,32 +129,17 @@
                             <span class="stat-label">підписок</span>
                         </div>
                     </div>
-                    </div>
                 </div>
             </div>
-
             <p class="profile-bio cursor-pointer">
-                Створюю світи за допомогою слів. Пишу про те, що болить і надихає. Дизайн, код, мистецтво. ✨ <i class="bi bi-pencil edit-icon"></i>
+                Натисніть сюди, щоб додати опис профілю. <i class="bi bi-pencil edit-icon"></i>
             </p>
-
             <div class="profile-tabs">
                 <button class="p-tab-btn active"><i class="bi bi-grid-3x3"></i> Публікації</button>
-                <button class="p-tab-btn"><i class="bi bi-arrow-repeat"></i> Репости</button>
-                <button class="p-tab-btn"><i class="bi bi-chat"></i> Коментарі</button>
             </div>
-
             <div class="profile-grid">
-                <div class="profile-post-tile">
-                    <img src="https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=300&auto=format&fit=crop" alt="Post">
                 </div>
-                <div class="profile-post-tile">
-                    <div class="text-post-preview">
-                        <p>Нічний шепіт вітру...</p>
-                    </div>
-                </div>
-            </div>
         </section>
-
 
         <nav class="bottom-nav">
             <button class="nav-btn active" data-screen="screen-home"><i class="bi bi-house-door"></i></button>
@@ -275,70 +148,17 @@
             <button class="nav-btn" data-screen="screen-profile"><i class="bi bi-person"></i></button>
         </nav>
 
-
-        <div id="search-modal" class="search-modal hidden">
-            <div class="search-modal-header">
-                <button id="close-search-btn" class="icon-btn">
-                    <i class="bi bi-arrow-left"></i>
-                </button>
-                <input type="text" placeholder="Пошук..." class="search-modal-input" id="search-input-field">
-            </div>
-            <div class="search-results">
-                <p class="placeholder-text">Введіть ключові слова для пошуку...</p>
-            </div>
-        </div>
-
-
         <div id="settings-modal" class="popup-modal hidden">
             <div class="popup-content">
                 <h3 class="sheet-title">Налаштування</h3>
                 <div class="settings-list">
-                    <button class="setting-item">
-                        <div class="setting-item-left">
-                            <i class="bi bi-bell"></i>
-                            <span>Сповіщення</span>
-                        </div>
-                        <div class="toggle-switch active"></div>
-                    </button>
-                    
-                    <button class="setting-item">
-                        <div class="setting-item-left">
-                            <i class="bi bi-archive"></i>
-                            <span>Архів публікацій</span>
-                        </div>
-                        <i class="bi bi-chevron-right text-gray"></i>
-                    </button>
-
                     <button class="setting-item" id="theme-toggle-btn">
-                        <div class="setting-item-left">
-                            <i class="bi bi-moon-stars"></i>
-                            <span>Темна тема</span>
-                        </div>
+                        <div class="setting-item-left"><i class="bi bi-moon-stars"></i><span>Темна тема</span></div>
                         <div class="toggle-switch active" id="theme-switch"></div>
                     </button>
-
                     <button class="setting-item text-danger">
-                        <div class="setting-item-left">
-                            <i class="bi bi-box-arrow-right"></i>
-                            <span>Вийти з акаунта</span>
-                        </div>
+                        <div class="setting-item-left"><i class="bi bi-box-arrow-right"></i><span>Вийти з акаунта</span></div>
                     </button>
-                </div>
-            </div>
-        </div>
-
-        <div id="filter-modal" class="popup-modal hidden">
-            <div class="popup-content">
-                <h3 class="sheet-title">Категорії стрічки</h3>
-                <div class="settings-list">
-                    <button class="setting-item">
-                        <span>Усе</span>
-                        <i class="bi bi-check2 text-accent"></i>
-                    </button>
-                    <button class="setting-item"><span>Відео</span></button>
-                    <button class="setting-item"><span>Музика</span></button>
-                    <button class="setting-item"><span>Поезія</span></button>
-                    <button class="setting-item"><span>Арт</span></button>
                 </div>
             </div>
         </div>
@@ -346,27 +166,21 @@
         <div id="create-post-modal" class="popup-modal hidden">
             <div class="popup-content">
                 <div class="create-post-header">
-                    <button id="close-create-post-btn" class="icon-btn text-gray">
-                        <i class="bi bi-x-lg"></i>
-                    </button>
+                    <button id="close-create-post-btn" class="icon-btn text-gray"><i class="bi bi-x-lg"></i></button>
                     <h3 class="sheet-title">Новий запис</h3>
                     <button id="submit-post-btn" class="text-btn-accent">Опублікувати</button>
                 </div>
-                
                 <div class="create-post-body">
-                    <textarea id="post-text-input" placeholder="Що вас надихає зараз? Можливо, новий вірш, фото чи ідея..." rows="5"></textarea>
-                    
+                    <textarea id="post-text-input" placeholder="Що вас надихає зараз?" rows="5"></textarea>
                     <div id="media-preview-container" class="hidden">
                         <button id="remove-media-btn" class="remove-media-icon"><i class="bi bi-x-circle-fill"></i></button>
                         <img id="image-preview" class="hidden" src="" alt="Preview">
                         <video id="video-preview" class="hidden" controls></video>
                     </div>
                 </div>
-
                 <div class="create-post-toolbar">
                     <button class="attach-btn" id="attach-image-btn"><i class="bi bi-image"></i></button>
                     <button class="attach-btn" id="attach-video-btn"><i class="bi bi-camera-video"></i></button>
-                    
                     <input type="file" id="image-input" accept="image/*" hidden>
                     <input type="file" id="video-input" accept="video/*" hidden>
                 </div>
@@ -377,9 +191,7 @@
             <div class="popup-content" style="max-width: 320px; text-align: center; margin: auto; border-radius: 20px;">
                 <h3 id="custom-modal-title" class="sheet-title" style="margin-bottom: 10px; justify-content: center;">Повідомлення</h3>
                 <p id="custom-modal-message" style="color: var(--text-secondary); margin-bottom: 20px; font-size: 14px;"></p>
-                
                 <input type="text" id="custom-modal-input" class="search-modal-input hidden" style="width: 100%; margin-bottom: 20px; text-align: center; background: var(--bg-color);">
-                
                 <div style="display: flex; gap: 10px; justify-content: center;">
                     <button id="custom-modal-cancel" class="action-btn hidden" style="flex: 1; padding: 10px; justify-content: center; background: var(--bg-color); border-radius: 12px;">Скасувати</button>
                     <button id="custom-modal-confirm" class="text-btn-accent" style="flex: 1; padding: 10px; justify-content: center; background: var(--accent-color); color: white; border-radius: 12px;">ОК</button>
@@ -387,72 +199,56 @@
             </div>
         </div>
 
-        <!-- ВІКНО АКТИВНОГО ЧАТУ -->
-        <div id="chat-room-modal" class="chat-room-modal hidden">
-            
-            <!-- Шапка чату -->
-            <div class="chat-room-header">
-                <button id="close-chat-room-btn" class="icon-btn"><i class="bi bi-arrow-left"></i></button>
-                <div class="chat-room-user-info">
-                    <img id="chat-room-avatar" src="" alt="Avatar">
-                    <h3 id="chat-room-name">Ім'я</h3>
+        <div id="chat-room-modal" class="hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 1000;">
+            <div style="display: flex; flex-direction: column; height: 100%;">
+                <div style="padding: 15px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid var(--border-color);">
+                    <button id="close-chat-room-btn" style="background: none; border: none; font-size: 20px; color: var(--text-primary); cursor: pointer;"><i class="bi bi-arrow-left"></i></button>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <img id="chat-room-avatar" src="" style="width: 35px; height: 35px; border-radius: 50%; object-fit: cover;">
+                        <h3 id="chat-room-name" style="margin: 0; font-size: 16px; color: var(--text-primary);">Ім'я</h3>
+                    </div>
+                </div>
+                <div id="chat-messages-container" style="flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px;">
+                    </div>
+                <div style="padding: 10px 15px; border-top: 1px solid var(--border-color); display: flex; gap: 10px; align-items: center; padding-bottom: max(15px, env(safe-area-inset-bottom));">
+                    <input type="text" id="chat-message-input" placeholder="Написати повідомлення..." autocomplete="off" style="flex: 1; border: none; background: var(--bg-secondary); border-radius: 20px; padding: 12px 15px; color: var(--text-primary); outline: none;">
+                    <button id="send-message-btn" style="background: none; border: none; color: var(--accent-color); font-size: 20px; cursor: pointer;"><i class="bi bi-send-fill"></i></button>
                 </div>
             </div>
-            
-            <!-- Область повідомлень -->
-            <div id="chat-messages-container" class="chat-messages-container">
-                <!-- Тут будуть з'являтися бульбашки повідомлень -->
-            </div>
-
-            <!-- Поле вводу -->
-            <div class="chat-room-input-area">
-                <input type="text" id="chat-message-input" placeholder="Написати повідомлення..." autocomplete="off">
-                <button id="send-message-btn" class="icon-btn"><i class="bi bi-send-fill"></i></button>
-            </div>
-            
         </div>
 
         <div id="other-user-profile-modal" class="hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 1000; overflow-y: auto;">
-            <div class="profile-top-bar" style="padding: 15px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid var(--border-color);">
-                <button id="close-other-profile-btn" class="icon-btn"><i class="bi bi-arrow-left"></i></button>
-                <h3 style="margin: 0; font-size: 18px;">Профіль</h3>
+            <div style="padding: 15px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid var(--border-color);">
+                <button id="close-other-profile-btn" style="background: none; border: none; font-size: 20px; color: var(--text-primary); cursor: pointer;"><i class="bi bi-arrow-left"></i></button>
+                <h3 style="margin: 0; font-size: 18px; color: var(--text-primary);">Профіль</h3>
             </div>
-
-            <div class="profile-header" style="margin-top: 15px;">
-                <div class="avatar-wrapper">
-                    <img id="other-profile-avatar" src="" alt="Avatar" class="profile-main-avatar">
-                </div>
-                <div class="profile-info">
-                    <h3 id="other-profile-nickname" class="profile-nickname">...</h3>
-                    <div class="profile-stats">
-                        <div class="stat-item">
-                            <span class="stat-number" id="other-followers-count">0</span>
-                            <span class="stat-label">читачів</span>
+            <div style="margin-top: 20px; padding: 0 20px; display: flex; align-items: center; gap: 20px;">
+                <img id="other-profile-avatar" src="" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-color);">
+                <div style="flex: 1;">
+                    <h3 id="other-profile-nickname" style="margin: 0 0 5px 0; font-size: 18px; color: var(--text-primary);">...</h3>
+                    <div style="display: flex; gap: 20px;">
+                        <div style="display: flex; flex-direction: column; align-items: center;">
+                            <span id="other-followers-count" style="font-weight: 600; font-size: 16px; color: var(--text-primary);">0</span>
+                            <span style="font-size: 12px; color: var(--text-secondary);">читачів</span>
                         </div>
-                        <div class="stat-item">
-                            <span class="stat-number" id="other-following-count">0</span>
-                            <span class="stat-label">підписок</span>
+                        <div style="display: flex; flex-direction: column; align-items: center;">
+                            <span id="other-following-count" style="font-weight: 600; font-size: 16px; color: var(--text-primary);">0</span>
+                            <span style="font-size: 12px; color: var(--text-secondary);">підписок</span>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <p id="other-profile-bio" class="profile-bio">...</p>
-
+            <p id="other-profile-bio" style="padding: 15px 20px; font-size: 14px; color: var(--text-secondary); line-height: 1.4; margin: 0;">...</p>
             <div style="display: flex; gap: 10px; padding: 0 20px; margin-bottom: 20px;">
-                <button id="follow-user-btn" class="text-btn-accent" style="flex: 1; border-radius: 20px; padding: 10px;">Підписатися</button>
-                <button id="message-user-btn" class="action-btn" style="flex: 1; border-radius: 20px; padding: 10px; background: var(--bg-secondary); border: none; color: var(--text-primary);">Написати</button>
+                <button id="follow-user-btn" style="flex: 1; border-radius: 20px; padding: 10px; background: var(--accent-color); color: white; border: none; font-weight: bold; cursor: pointer;">Підписатися</button>
+                <button id="message-user-btn" style="flex: 1; border-radius: 20px; padding: 10px; background: var(--bg-secondary); border: none; color: var(--text-primary); font-weight: bold; cursor: pointer;">Написати</button>
             </div>
-
-            <div class="profile-tabs">
-                <button class="p-tab-btn active"><i class="bi bi-grid-3x3"></i> Публікації</button>
+            <div style="display: flex; justify-content: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px;">
+                <button style="background: none; border: none; color: var(--text-primary); font-weight: 600; border-bottom: 2px solid var(--accent-color); padding: 5px 10px;"><i class="bi bi-grid-3x3"></i> Публікації</button>
             </div>
-
-            <div id="other-profile-grid" class="profile-grid">
+            <div id="other-profile-grid" class="profile-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 0 2px;">
                 </div>
         </div>
-
-
 
     </div>
 
