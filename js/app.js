@@ -1,6 +1,6 @@
 import './auth.js';
 import { db, auth } from './firebase-config.js';
-import { collection, addDoc, getDocs, doc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { collection, addDoc, getDocs, doc, updateDoc, arrayUnion, arrayRemove, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 document.addEventListener('DOMContentLoaded', () => {
     
