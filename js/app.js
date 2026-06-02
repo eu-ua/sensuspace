@@ -4,6 +4,13 @@ import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, arrayUnion, arr
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
 document.addEventListener('DOMContentLoaded', () => {
+
+    // БРОНЕБІЙНЕ ОЧИЩЕННЯ НА СТАРТІ: Ховаємо все, що не повинно бути на екрані
+    document.querySelectorAll('.app-screen').forEach(s => {
+        if (!s.classList.contains('active')) {
+            s.classList.add('hidden');
+        }
+    });
     
     // ==========================================
     // УНІВЕРСАЛЬНЕ КАСТОМНЕ ВІКНО
@@ -50,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 1. НАВІГАЦІЯ ТА МОДАЛЬНІ ВІКНА
+    // 1. НАВІГАЦІЯ (ОНОВЛЕНА, ДЛЯ ПОВНОГО ОЧИЩЕННЯ ЕКРАНІВ)
     // ==========================================
     const navButtons = document.querySelectorAll('.nav-btn');
     const screens = document.querySelectorAll('.app-screen');
@@ -59,14 +66,24 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.addEventListener('click', () => {
             const targetScreen = document.getElementById(btn.dataset.screen);
             if (targetScreen) {
+                // Знімаємо активність з усіх кнопок меню
                 navButtons.forEach(b => b.classList.remove('active'));
-                screens.forEach(s => s.classList.remove('active'));
+                
+                // ПРИМУСОВО ховаємо абсолютно всі екрани, профілі та чати
+                screens.forEach(s => {
+                    s.classList.remove('active');
+                    s.classList.add('hidden'); // Бронебійне приховування
+                });
+                
+                // Активуємо тільки ту вкладку, на яку натиснули
                 btn.classList.add('active');
                 targetScreen.classList.add('active');
+                targetScreen.classList.remove('hidden');
             }
         });
     });
 
+    // Модальні вікна (Налаштування, Новий пост)
     const settingsModal = document.getElementById('settings-modal');
     const createPostModal = document.getElementById('create-post-modal');
     
@@ -406,9 +423,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentChatUserId = null;
     let chatUnsubscribe = null; 
 
-    // Закриття чату (повернення на попередню сторінку)
+    // Кнопка назад (просто імітує клік по активній вкладці меню)
     if (closeChatRoomBtn) closeChatRoomBtn.addEventListener('click', () => {
-        document.querySelector('.nav-btn.active')?.click(); // Магія повернення назад
+        document.querySelector('.nav-btn.active')?.click(); 
         if (chatUnsubscribe) chatUnsubscribe(); 
     });
 
@@ -423,9 +440,13 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('chat-room-name').textContent = targetUserName || "Користувач";
         document.getElementById('chat-room-avatar').src = targetUserAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop';
         
-        // Відкриваємо екран чату як стандартну вкладку
-        document.querySelectorAll('.app-screen').forEach(s => s.classList.remove('active'));
+        // ПРИМУСОВО ховаємо всі екрани і показуємо чат
+        document.querySelectorAll('.app-screen').forEach(s => {
+            s.classList.remove('active');
+            s.classList.add('hidden');
+        });
         chatRoomModal.classList.add('active');
+        chatRoomModal.classList.remove('hidden');
         
         chatMessagesContainer.innerHTML = ''; 
 
@@ -517,7 +538,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     card.className = 'search-user-card';
                     card.innerHTML = `<img src="${data.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop'}"><div class="search-user-info"><h4>${data.nickname || 'Користувач'}</h4><p>${data.bio ? data.bio.substring(0,30) : 'На платформі'}</p></div>`;
                     
-                    // Відкриваємо профіль при кліку
                     card.addEventListener('click', () => window.openOtherProfile(docSnap.id, data));
                     globalContentArea.appendChild(card);
                 }
@@ -526,20 +546,22 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Закриття профілю (повернення назад)
     if (closeOtherProfileBtn) closeOtherProfileBtn.addEventListener('click', () => {
-        document.querySelector('.nav-btn.active')?.click(); // Магія повернення назад
+        document.querySelector('.nav-btn.active')?.click(); 
         if(otherProfileUnsubscribe) otherProfileUnsubscribe();
     });
 
     window.openOtherProfile = async (userId, initialData = {}) => {
         currentViewedUserId = userId;
         
-        // Відкриваємо як стандартний екран
-        document.querySelectorAll('.app-screen').forEach(s => s.classList.remove('active'));
+        // ПРИМУСОВО ховаємо всі екрани і показуємо чужий профіль
+        document.querySelectorAll('.app-screen').forEach(s => {
+            s.classList.remove('active');
+            s.classList.add('hidden');
+        });
         otherProfileModal.classList.add('active');
+        otherProfileModal.classList.remove('hidden');
         
-        // 1. Миттєве заповнення
         const fallbackAvatar = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop';
         document.getElementById('other-profile-avatar').src = initialData.avatarUrl || fallbackAvatar;
         document.getElementById('other-profile-nickname').textContent = initialData.nickname || "Користувач";
@@ -550,7 +572,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const grid = document.getElementById('other-profile-grid');
         grid.innerHTML = '<p style="text-align:center; grid-column:1/-1; margin-top:20px;">Завантаження...</p>';
         
-        // 2. Підписка на оновлення
         if (otherProfileUnsubscribe) otherProfileUnsubscribe();
         otherProfileUnsubscribe = onSnapshot(doc(db, "users", userId), (docSnap) => {
             if (docSnap.exists()) {
@@ -572,7 +593,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // 3. Завантаження постів
         try {
             const postsSnap = await getDocs(query(collection(db, "posts"), where("authorId", "==", userId), orderBy("createdAt", "desc")));
             grid.innerHTML = '';
@@ -582,9 +602,9 @@ document.addEventListener('DOMContentLoaded', () => {
                      const post = pSnap.data();
                      const tile = document.createElement('div');
                      tile.className = 'profile-post-tile';
-                     if (post.mediaType === 'image') tile.innerHTML = `<img src="${post.mediaUrl}">`;
-                     else if (post.mediaType === 'video') tile.innerHTML = `<video src="${post.mediaUrl}" muted></video>`;
-                     else tile.innerHTML = `<div class="text-post-preview"><p>${post.text}</p></div>`;
+                     if (post.mediaType === 'image') tile.innerHTML = `<img src="${post.mediaUrl}" style="width:100%; height:100%; object-fit:cover;">`;
+                     else if (post.mediaType === 'video') tile.innerHTML = `<video src="${post.mediaUrl}" style="width:100%; height:100%; object-fit:cover;" muted></video>`;
+                     else tile.innerHTML = `<div class="text-post-preview" style="padding:10px;"><p style="font-size:12px; margin:0;">${post.text}</p></div>`;
                      grid.appendChild(tile);
                 });
             }
@@ -613,7 +633,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     if (messageUserBtn) messageUserBtn.addEventListener('click', () => {
-        // Замість ручного закриття, просто відкриваємо чат поверх
         if (window.openChatWithUser) window.openChatWithUser(currentViewedUserId, document.getElementById('other-profile-nickname').textContent, document.getElementById('other-profile-avatar').src);
     });
 
