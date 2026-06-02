@@ -5,7 +5,7 @@ import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/fi
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    // БРОНЕБІЙНЕ ОЧИЩЕННЯ НА СТАРТІ: Ховаємо все, що не повинно бути на екрані
+    // БРОНЕБІЙНЕ ОЧИЩЕННЯ НА СТАРТІ
     document.querySelectorAll('.app-screen').forEach(s => {
         if (!s.classList.contains('active')) {
             s.classList.add('hidden');
@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 1. НАВІГАЦІЯ (ОНОВЛЕНА, ДЛЯ ПОВНОГО ОЧИЩЕННЯ ЕКРАНІВ)
+    // 1. НАВІГАЦІЯ 
     // ==========================================
     const navButtons = document.querySelectorAll('.nav-btn');
     const screens = document.querySelectorAll('.app-screen');
@@ -66,16 +66,13 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.addEventListener('click', () => {
             const targetScreen = document.getElementById(btn.dataset.screen);
             if (targetScreen) {
-                // Знімаємо активність з усіх кнопок меню
                 navButtons.forEach(b => b.classList.remove('active'));
                 
-                // ПРИМУСОВО ховаємо абсолютно всі екрани, профілі та чати
                 screens.forEach(s => {
                     s.classList.remove('active');
-                    s.classList.add('hidden'); // Бронебійне приховування
+                    s.classList.add('hidden'); 
                 });
                 
-                // Активуємо тільки ту вкладку, на яку натиснули
                 btn.classList.add('active');
                 targetScreen.classList.add('active');
                 targetScreen.classList.remove('hidden');
@@ -83,7 +80,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Модальні вікна (Налаштування, Новий пост)
     const settingsModal = document.getElementById('settings-modal');
     const createPostModal = document.getElementById('create-post-modal');
     
@@ -238,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 7. СТРІЧКА ТА 8. ЛАЙКИ ТА ЧАТИ
+    // 7. СТРІЧКА
     // ==========================================
     const feedContainer = document.querySelector('.feed-container');
 
@@ -268,13 +264,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const postElement = document.createElement('div');
                 postElement.classList.add('post-card');
+                
+                // ТУТ МАГІЯ: Додано класи user-profile-trigger для аватарки та імені
                 postElement.innerHTML = `
                     <div class="post-header">
-                        <div class="avatar-wrapper" style="width: 40px; height: 40px; overflow: hidden; border-radius: 50%;">
+                        <div class="avatar-wrapper user-profile-trigger" data-user-id="${post.authorId}" data-user-name="${post.authorName}" style="width: 40px; height: 40px; overflow: hidden; border-radius: 50%; cursor: pointer;">
                             <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop" style="width: 100%; height: 100%; object-fit: cover;" alt="Avatar">
                         </div>
                         <div class="post-user-info">
-                            <span class="post-username">${post.authorName}</span>
+                            <span class="post-username user-profile-trigger" data-user-id="${post.authorId}" data-user-name="${post.authorName}" style="cursor: pointer;">${post.authorName}</span>
                             <span class="post-time">${timeString}</span>
                         </div>
                         ${isAuthor ? `<button class="post-menu-btn delete-post-btn"><i class="bi bi-trash" style="color: #ff4444;"></i></button>` : `<button class="post-menu-btn"><i class="bi bi-three-dots"></i></button>`}
@@ -304,7 +302,34 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // ==========================================
+    // 8. ГЛОБАЛЬНІ КЛІКИ (Профілі, Лайки, Чати)
+    // ==========================================
     document.addEventListener('click', async (e) => {
+        
+        // --- МАГІЯ ВІДКРИТТЯ ПРОФІЛЮ ---
+        const profileTrigger = e.target.closest('.user-profile-trigger');
+        if (profileTrigger) {
+            e.stopPropagation(); // Зупиняємо інші кліки
+            const userId = profileTrigger.dataset.userId;
+            if (!userId) return;
+
+            const currentUser = auth.currentUser;
+            if (currentUser && userId === currentUser.uid) {
+                // Якщо клікнули на себе - йдемо в свій профіль!
+                document.querySelector('.nav-btn[data-screen="screen-profile"]')?.click();
+            } else {
+                // Відкриваємо чужий профіль з попереднім завантаженням імені
+                const initialData = {
+                    nickname: profileTrigger.dataset.userName,
+                    avatarUrl: profileTrigger.dataset.userAvatar
+                };
+                if (window.openOtherProfile) window.openOtherProfile(userId, initialData);
+            }
+            return;
+        }
+
+        // --- ОБРОБКА ЛАЙКІВ ---
         const likeBtn = e.target.closest('.like-btn');
         if (likeBtn) {
             const user = auth.currentUser;
@@ -325,6 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // --- ОБРОБКА ЛІТАЧКА ---
         const dmBtn = e.target.closest('.dm-btn');
         if (dmBtn && window.openChatWithUser) {
             window.openChatWithUser(dmBtn.dataset.authorId, dmBtn.dataset.authorName, null);
@@ -423,7 +449,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentChatUserId = null;
     let chatUnsubscribe = null; 
 
-    // Кнопка назад (просто імітує клік по активній вкладці меню)
     if (closeChatRoomBtn) closeChatRoomBtn.addEventListener('click', () => {
         document.querySelector('.nav-btn.active')?.click(); 
         if (chatUnsubscribe) chatUnsubscribe(); 
@@ -437,10 +462,25 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentUser.uid === targetUserId) { await showCustomModal({ title: "Увага", message: "Не можна писати собі." }); return; }
 
         currentChatUserId = targetUserId;
-        document.getElementById('chat-room-name').textContent = targetUserName || "Користувач";
-        document.getElementById('chat-room-avatar').src = targetUserAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop';
         
-        // ПРИМУСОВО ховаємо всі екрани і показуємо чат
+        // Робимо шапку чату активною для кліку
+        const chatRoomNameEl = document.getElementById('chat-room-name');
+        const chatRoomAvatarEl = document.getElementById('chat-room-avatar');
+        
+        chatRoomNameEl.textContent = targetUserName || "Користувач";
+        chatRoomNameEl.classList.add('user-profile-trigger');
+        chatRoomNameEl.style.cursor = 'pointer';
+        chatRoomNameEl.dataset.userId = targetUserId;
+        chatRoomNameEl.dataset.userName = targetUserName;
+        chatRoomNameEl.dataset.userAvatar = targetUserAvatar;
+
+        chatRoomAvatarEl.src = targetUserAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop';
+        chatRoomAvatarEl.classList.add('user-profile-trigger');
+        chatRoomAvatarEl.style.cursor = 'pointer';
+        chatRoomAvatarEl.dataset.userId = targetUserId;
+        chatRoomAvatarEl.dataset.userName = targetUserName;
+        chatRoomAvatarEl.dataset.userAvatar = targetUserAvatar;
+        
         document.querySelectorAll('.app-screen').forEach(s => {
             s.classList.remove('active');
             s.classList.add('hidden');
@@ -499,8 +539,21 @@ document.addEventListener('DOMContentLoaded', () => {
                         chatItem.style.cursor = 'pointer';
                         const avatar = data.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop';
                         const name = data.nickname || "Користувач";
-                        chatItem.innerHTML = `<img src="${avatar}" class="chat-avatar"><div class="chat-info"><span class="chat-name">${name}</span><p class="chat-last-message" style="font-size:12px; color:#888;">Написати повідомлення...</p></div>`;
-                        chatItem.addEventListener('click', () => window.openChatWithUser(docSnap.id, name, avatar));
+                        
+                        // Додано клас user-profile-trigger до аватарки та імені
+                        chatItem.innerHTML = `
+                            <img src="${avatar}" class="chat-avatar user-profile-trigger" data-user-id="${docSnap.id}" data-user-name="${name}" data-user-avatar="${avatar}" style="cursor:pointer;">
+                            <div class="chat-info">
+                                <span class="chat-name user-profile-trigger" data-user-id="${docSnap.id}" data-user-name="${name}" data-user-avatar="${avatar}" style="cursor:pointer;">${name}</span>
+                                <p class="chat-last-message" style="font-size:12px; color:#888;">Написати повідомлення...</p>
+                            </div>
+                        `;
+                        
+                        chatItem.addEventListener('click', (e) => {
+                            // Якщо клікнули на аватарку чи ім'я - спрацює перехід в профіль, тому чат не відкриваємо
+                            if (e.target.closest('.user-profile-trigger')) return; 
+                            window.openChatWithUser(docSnap.id, name, avatar);
+                        });
                         dynamicChatList.appendChild(chatItem);
                     });
                 });
@@ -554,7 +607,6 @@ document.addEventListener('DOMContentLoaded', () => {
     window.openOtherProfile = async (userId, initialData = {}) => {
         currentViewedUserId = userId;
         
-        // ПРИМУСОВО ховаємо всі екрани і показуємо чужий профіль
         document.querySelectorAll('.app-screen').forEach(s => {
             s.classList.remove('active');
             s.classList.add('hidden');
