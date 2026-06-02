@@ -5,16 +5,12 @@ import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/fi
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    // БРОНЕБІЙНЕ ОЧИЩЕННЯ НА СТАРТІ
     document.querySelectorAll('.app-screen').forEach(s => {
         if (!s.classList.contains('active')) {
             s.classList.add('hidden');
         }
     });
     
-    // ==========================================
-    // УНІВЕРСАЛЬНЕ КАСТОМНЕ ВІКНО
-    // ==========================================
     function showCustomModal({ title, message, type = 'alert' }) {
         return new Promise((resolve) => {
             const modal = document.getElementById('custom-modal');
@@ -56,9 +52,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ==========================================
-    // 1. НАВІГАЦІЯ 
-    // ==========================================
     const navButtons = document.querySelectorAll('.nav-btn');
     const screens = document.querySelectorAll('.app-screen');
 
@@ -67,12 +60,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const targetScreen = document.getElementById(btn.dataset.screen);
             if (targetScreen) {
                 navButtons.forEach(b => b.classList.remove('active'));
-                
                 screens.forEach(s => {
                     s.classList.remove('active');
                     s.classList.add('hidden'); 
                 });
-                
                 btn.classList.add('active');
                 targetScreen.classList.add('active');
                 targetScreen.classList.remove('hidden');
@@ -112,9 +103,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ==========================================
-    // 5. ЛОГІКА ПРИКРІПЛЕННЯ МЕДІА
-    // ==========================================
     const attachImageBtn = document.getElementById('attach-image-btn');
     const attachVideoBtn = document.getElementById('attach-video-btn');
     const imageInput = document.getElementById('image-input');
@@ -162,9 +150,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ==========================================
-    // 6. ПУБЛІКАЦІЯ ПОСТА
-    // ==========================================
     const submitPostBtn = document.getElementById('submit-post-btn');
     const postTextInput = document.getElementById('post-text-input');
 
@@ -233,9 +218,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ==========================================
-    // 7. СТРІЧКА
-    // ==========================================
     const feedContainer = document.querySelector('.feed-container');
 
     if (feedContainer) {
@@ -265,7 +247,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const postElement = document.createElement('div');
                 postElement.classList.add('post-card');
                 
-                // ТУТ МАГІЯ: Додано класи user-profile-trigger для аватарки та імені
                 postElement.innerHTML = `
                     <div class="post-header">
                         <div class="avatar-wrapper user-profile-trigger" data-user-id="${post.authorId}" data-user-name="${post.authorName}" style="width: 40px; height: 40px; overflow: hidden; border-radius: 50%; cursor: pointer;">
@@ -302,24 +283,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ==========================================
-    // 8. ГЛОБАЛЬНІ КЛІКИ (Профілі, Лайки, Чати)
-    // ==========================================
     document.addEventListener('click', async (e) => {
         
-        // --- МАГІЯ ВІДКРИТТЯ ПРОФІЛЮ ---
         const profileTrigger = e.target.closest('.user-profile-trigger');
         if (profileTrigger) {
-            e.stopPropagation(); // Зупиняємо інші кліки
+            e.stopPropagation();
             const userId = profileTrigger.dataset.userId;
             if (!userId) return;
 
             const currentUser = auth.currentUser;
             if (currentUser && userId === currentUser.uid) {
-                // Якщо клікнули на себе - йдемо в свій профіль!
                 document.querySelector('.nav-btn[data-screen="screen-profile"]')?.click();
             } else {
-                // Відкриваємо чужий профіль з попереднім завантаженням імені
                 const initialData = {
                     nickname: profileTrigger.dataset.userName,
                     avatarUrl: profileTrigger.dataset.userAvatar
@@ -329,7 +304,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // --- ОБРОБКА ЛАЙКІВ ---
         const likeBtn = e.target.closest('.like-btn');
         if (likeBtn) {
             const user = auth.currentUser;
@@ -350,16 +324,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // --- ОБРОБКА ЛІТАЧКА ---
         const dmBtn = e.target.closest('.dm-btn');
         if (dmBtn && window.openChatWithUser) {
             window.openChatWithUser(dmBtn.dataset.authorId, dmBtn.dataset.authorName, null);
         }
     });
 
-    // ==========================================
-    // 9. МІЙ ПРОФІЛЬ (РЕДАГУВАННЯ ТА ПОСТИ)
-    // ==========================================
     const profileGrid = document.querySelector('.profile-grid');
     const profileAvatar = document.querySelector('.profile-main-avatar');
     const profileNickname = document.querySelector('.profile-nickname');
@@ -437,24 +407,81 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ==========================================
-    // 10. ПРИВАТНІ ЧАТИ
+// ==========================================
+    // 10. ПРИВАТНІ ЧАТИ (Етап 2: Миттєве медіа, Пошук, Без рамок)
     // ==========================================
     const chatRoomModal = document.getElementById('chat-room-modal');
     const closeChatRoomBtn = document.getElementById('close-chat-room-btn');
     const chatMessagesContainer = document.getElementById('chat-messages-container');
     const chatMessageInput = document.getElementById('chat-message-input');
     const sendMessageBtn = document.getElementById('send-message-btn');
+    
+    const chatMediaInput = document.getElementById('chat-media-input');
+    const chatAttachBtn = document.getElementById('chat-attach-btn');
+    
+    // Елементи пошуку
+    const chatSearchBtn = document.getElementById('chat-search-btn');
+    const chatSearchBar = document.getElementById('chat-search-bar');
+    const chatInnerSearchInput = document.getElementById('chat-inner-search-input');
 
     let currentChatUserId = null;
     let chatUnsubscribe = null; 
+    let currentChatFile = null; 
 
+    // Закриття чату
     if (closeChatRoomBtn) closeChatRoomBtn.addEventListener('click', () => {
         document.querySelector('.nav-btn.active')?.click(); 
         if (chatUnsubscribe) chatUnsubscribe(); 
     });
 
+    // --- ПОШУК ПО ЧАТУ (Пункт 4) ---
+    if (chatSearchBtn) {
+        chatSearchBtn.addEventListener('click', () => {
+            chatSearchBar.classList.toggle('hidden');
+            if (!chatSearchBar.classList.contains('hidden')) {
+                chatInnerSearchInput.focus();
+            } else {
+                chatInnerSearchInput.value = '';
+                document.querySelectorAll('.chat-message').forEach(msg => msg.style.display = 'flex');
+            }
+        });
+    }
+
+    if (chatInnerSearchInput) {
+        chatInnerSearchInput.addEventListener('input', (e) => {
+            const q = e.target.value.toLowerCase().trim();
+            document.querySelectorAll('.chat-message').forEach(msg => {
+                const textEl = msg.querySelector('.msg-text');
+                const text = textEl ? textEl.textContent.toLowerCase() : '';
+                if (text.includes(q)) {
+                    msg.style.display = 'flex';
+                } else {
+                    msg.style.display = 'none';
+                }
+            });
+        });
+    }
+
+    // --- ВІДПРАВКА ФАЙЛУ В ОДИН КЛІК (Пункти 2 і 3) ---
+    if (chatAttachBtn) chatAttachBtn.addEventListener('click', () => chatMediaInput.click());
+    
+    if (chatMediaInput) {
+        chatMediaInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            currentChatFile = file;
+            await sendMessage(); // МИТТЄВО запускаємо відправку!
+        });
+    }
+
     function getChatRoomId(uid1, uid2) { return uid1 < uid2 ? `${uid1}_${uid2}` : `${uid2}_${uid1}`; }
+
+    function linkify(text) {
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        return text.replace(urlRegex, function(url) {
+            return `<a href="${url}" target="_blank" style="text-decoration: underline; font-weight: 500; color: inherit;">${url}</a>`;
+        });
+    }
 
     window.openChatWithUser = async (targetUserId, targetUserName, targetUserAvatar) => {
         const currentUser = auth.currentUser;
@@ -462,25 +489,23 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentUser.uid === targetUserId) { await showCustomModal({ title: "Увага", message: "Не можна писати собі." }); return; }
 
         currentChatUserId = targetUserId;
+        const roomId = getChatRoomId(currentUser.uid, targetUserId);
         
-        // Робимо шапку чату активною для кліку
         const chatRoomNameEl = document.getElementById('chat-room-name');
         const chatRoomAvatarEl = document.getElementById('chat-room-avatar');
         
         chatRoomNameEl.textContent = targetUserName || "Користувач";
         chatRoomNameEl.classList.add('user-profile-trigger');
-        chatRoomNameEl.style.cursor = 'pointer';
         chatRoomNameEl.dataset.userId = targetUserId;
-        chatRoomNameEl.dataset.userName = targetUserName;
-        chatRoomNameEl.dataset.userAvatar = targetUserAvatar;
 
         chatRoomAvatarEl.src = targetUserAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop';
         chatRoomAvatarEl.classList.add('user-profile-trigger');
-        chatRoomAvatarEl.style.cursor = 'pointer';
         chatRoomAvatarEl.dataset.userId = targetUserId;
-        chatRoomAvatarEl.dataset.userName = targetUserName;
-        chatRoomAvatarEl.dataset.userAvatar = targetUserAvatar;
         
+        // Скидаємо пошук при відкритті нового чату
+        if (chatSearchBar) chatSearchBar.classList.add('hidden');
+        if (chatInnerSearchInput) chatInnerSearchInput.value = '';
+
         document.querySelectorAll('.app-screen').forEach(s => {
             s.classList.remove('active');
             s.classList.add('hidden');
@@ -491,40 +516,166 @@ document.addEventListener('DOMContentLoaded', () => {
         chatMessagesContainer.innerHTML = ''; 
 
         if (chatUnsubscribe) chatUnsubscribe(); 
-        chatUnsubscribe = onSnapshot(query(collection(db, "chats", getChatRoomId(currentUser.uid, targetUserId), "messages"), orderBy("timestamp", "asc")), (snapshot) => {
+        chatUnsubscribe = onSnapshot(query(collection(db, "chats", roomId, "messages"), orderBy("timestamp", "asc")), (snapshot) => {
+            
             snapshot.docChanges().forEach((change) => {
                 if (change.type === "added") {
                     const msgData = change.doc.data();
+                    const msgId = change.doc.id; 
                     const isMine = msgData.senderId === currentUser.uid;
+                    
                     let timeString = '';
                     if (msgData.timestamp) timeString = msgData.timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
                     const msgDiv = document.createElement('div');
                     msgDiv.className = `chat-message ${isMine ? 'sent' : 'received'}`;
-                    msgDiv.innerHTML = `${msgData.text} <span class="chat-message-time">${timeString}</span>`;
+                    msgDiv.dataset.messageId = msgId; 
+                    
+                    let deleteBtnHtml = isMine ? `<button class="delete-msg-btn" data-id="${msgId}" style="background: none; border: none; color: #ff4444; font-size: 14px; cursor: pointer; padding: 0;"><i class="bi bi-trash"></i></button>` : '';
+
+                    // Обробка Фото та Відео
+                    let mediaHtml = '';
+                    let isMediaOnly = false;
+
+                    if (msgData.mediaUrl) {
+                        if (!msgData.text) isMediaOnly = true; // Пункт 1: Тільки фото (без тексту)
+                        
+                        if (msgData.mediaType === 'image') {
+                            mediaHtml = `<img src="${msgData.mediaUrl}" style="max-width: 100%; border-radius: ${isMediaOnly ? '20px' : '12px'}; cursor: pointer; display: block;" onclick="window.open('${msgData.mediaUrl}', '_blank')">`;
+                        } else if (msgData.mediaType === 'video') {
+                            mediaHtml = `<video src="${msgData.mediaUrl}" controls style="max-width: 100%; border-radius: ${isMediaOnly ? '20px' : '12px'}; display: block;"></video>`;
+                        }
+                    }
+
+                    let textHtml = msgData.text ? `<div class="msg-text">${linkify(msgData.text)}</div>` : '';
+
+                    // Якщо це тільки фото, час і кошик розміщуємо акуратно під ним
+                    let footerHtml = `<div style="display: flex; justify-content: ${isMine ? 'flex-end' : 'flex-start'}; align-items: center; gap: 8px; margin-top: ${isMediaOnly ? '6px' : '0'}; padding: 0 4px;">
+                        <span class="chat-message-time" style="margin: 0; color: ${isMediaOnly ? 'var(--text-secondary)' : 'inherit'}; opacity: ${isMediaOnly ? '1' : '0.6'};">${timeString}</span>
+                        ${deleteBtnHtml}
+                    </div>`;
+
+                    msgDiv.innerHTML = `
+                        ${mediaHtml}
+                        ${textHtml}
+                        ${footerHtml}
+                    `;
+                    
+                    // МАГІЯ: Якщо повідомлення - це лише фото, повністю "розчиняємо" чорну рамку
+                    if (isMediaOnly) {
+                        msgDiv.style.setProperty('background-color', 'transparent', 'important');
+                        msgDiv.style.setProperty('padding', '0', 'important');
+                        msgDiv.style.setProperty('border', 'none', 'important');
+                    }
+
+                    if (isMine) {
+                        const delBtn = msgDiv.querySelector('.delete-msg-btn');
+                        delBtn.addEventListener('click', async () => {
+                            const confirmDelete = await showCustomModal({ title: "Видалення", message: "Видалити це повідомлення?", type: "confirm" });
+                            if (confirmDelete) {
+                                try {
+                                    await deleteDoc(doc(db, "chats", roomId, "messages", msgId));
+                                    msgDiv.remove(); 
+                                } catch (error) {
+                                    console.error("Помилка видалення:", error);
+                                }
+                            }
+                        });
+                    }
+
                     chatMessagesContainer.appendChild(msgDiv);
-                    chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+                    chatMessagesContainer.scrollTo({ top: chatMessagesContainer.scrollHeight, behavior: 'smooth' });
+                }
+                
+                if (change.type === "removed") {
+                    const msgElement = document.querySelector(`.chat-message[data-message-id="${change.doc.id}"]`);
+                    if (msgElement) msgElement.remove();
                 }
             });
         });
     };
 
+    // Відправка повідомлення + завантаження файлу
     async function sendMessage() {
         const text = chatMessageInput.value.trim();
         const currentUser = auth.currentUser;
-        if (!text || !currentUser || !currentChatUserId) return;
-        chatMessageInput.value = ''; 
+        
+        if ((!text && !currentChatFile) || !currentUser || !currentChatUserId) return;
+        
+        const originalBtnHtml = sendMessageBtn.innerHTML;
+        const originalAttachHtml = chatAttachBtn.innerHTML;
+        
+        // Показуємо пісочний годинник на кнопці, яку натиснули
+        sendMessageBtn.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+        sendMessageBtn.disabled = true;
+        chatMessageInput.disabled = true;
+        
+        if (currentChatFile) {
+            chatAttachBtn.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+            chatAttachBtn.disabled = true;
+        }
+        
         try {
-            await addDoc(collection(db, "chats", getChatRoomId(currentUser.uid, currentChatUserId), "messages"), { text: text, senderId: currentUser.uid, timestamp: serverTimestamp() });
+            let mediaUrl = null;
+            let mediaType = null;
+
+            if (currentChatFile) {
+                const formData = new FormData();
+                formData.append('file', currentChatFile);
+                formData.append('upload_preset', 'sensuspace'); 
+
+                const response = await fetch(`https://api.cloudinary.com/v1_1/dabzs7jkc/auto/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                
+                if (data.secure_url) {
+                    mediaUrl = data.secure_url; 
+                    mediaType = data.resource_type; 
+                } else throw new Error('Помилка завантаження файлу в хмару');
+            }
+
+            await addDoc(collection(db, "chats", getChatRoomId(currentUser.uid, currentChatUserId), "messages"), { 
+                text: text, 
+                mediaUrl: mediaUrl,
+                mediaType: mediaType,
+                senderId: currentUser.uid, 
+                timestamp: serverTimestamp() 
+            });
+
+            currentChatFile = null;
+            chatMediaInput.value = '';
+            chatMessageInput.value = ''; 
+            
+            // Якщо пошук був активний, скидаємо його, щоб побачити відправлене повідомлення
+            if (chatInnerSearchInput && chatInnerSearchInput.value) {
+                chatInnerSearchInput.value = '';
+                document.querySelectorAll('.chat-message').forEach(m => m.style.display = 'flex');
+            }
+            
         } catch (error) {
-            console.error(error);
+            console.error("Помилка відправки:", error);
+            await showCustomModal({ title: "Помилка", message: "Не вдалося відправити повідомлення або файл." });
+        } finally {
+            sendMessageBtn.innerHTML = originalBtnHtml;
+            sendMessageBtn.disabled = false;
+            chatAttachBtn.innerHTML = originalAttachHtml;
+            chatAttachBtn.disabled = false;
+            chatMessageInput.disabled = false;
+            chatMessageInput.focus();
         }
     }
 
     if (sendMessageBtn) sendMessageBtn.addEventListener('click', sendMessage);
     if (chatMessageInput) chatMessageInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
 
+
+    // ==========================================
+    // 10.1 СПИСОК ЧАТІВ (ВКЛАДКА ПОВІДОМЛЕНЬ)
+    // ==========================================
     const dynamicChatList = document.getElementById('dynamic-chat-list');
+    
     if (dynamicChatList) {
         onAuthStateChanged(auth, (user) => {
             if (user) {
@@ -534,26 +685,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     snapshot.forEach((docSnap) => {
                         const data = docSnap.data();
                         if (docSnap.id === user.uid) return;
+                        
                         const chatItem = document.createElement('div');
                         chatItem.className = 'chat-item';
-                        chatItem.style.cursor = 'pointer';
+                        
                         const avatar = data.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop';
                         const name = data.nickname || "Користувач";
                         
-                        // Додано клас user-profile-trigger до аватарки та імені
                         chatItem.innerHTML = `
-                            <img src="${avatar}" class="chat-avatar user-profile-trigger" data-user-id="${docSnap.id}" data-user-name="${name}" data-user-avatar="${avatar}" style="cursor:pointer;">
+                            <img src="${avatar}" class="chat-avatar" alt="Avatar">
                             <div class="chat-info">
-                                <span class="chat-name user-profile-trigger" data-user-id="${docSnap.id}" data-user-name="${name}" data-user-avatar="${avatar}" style="cursor:pointer;">${name}</span>
-                                <p class="chat-last-message" style="font-size:12px; color:#888;">Написати повідомлення...</p>
+                                <h4 class="chat-name">${name}</h4>
+                                <p class="chat-last-message">Натисніть, щоб написати...</p>
                             </div>
                         `;
                         
-                        chatItem.addEventListener('click', (e) => {
-                            // Якщо клікнули на аватарку чи ім'я - спрацює перехід в профіль, тому чат не відкриваємо
-                            if (e.target.closest('.user-profile-trigger')) return; 
+                        chatItem.addEventListener('click', () => {
                             window.openChatWithUser(docSnap.id, name, avatar);
                         });
+                        
                         dynamicChatList.appendChild(chatItem);
                     });
                 });
@@ -561,9 +711,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ==========================================
-    // 11. ПОШУК ТА ЧУЖИЙ ПРОФІЛЬ
-    // ==========================================
     const globalSearchInput = document.querySelector('.global-search-input');
     const globalContentArea = document.querySelector('.global-content-area');
     const otherProfileModal = document.getElementById('other-user-profile-modal');

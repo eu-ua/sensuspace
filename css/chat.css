@@ -1,138 +1,6 @@
-/* --- ШАПКА РОЗДІЛУ ЧАТІВ --- */
-.chat-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    max-width: 600px;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-.chat-header h2 {
-    font-size: 24px;
-    font-weight: 700;
-}
-
-/* --- СПИСОК ЧАТІВ --- */
-.chat-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px; /* Мінімалістичний відступ між діалогами */
-    max-width: 600px;
-    margin: 0 auto;
-}
-
-.chat-item {
-    display: flex;
-    align-items: center;
-    padding: 14px 16px;
-    background-color: #1E1E1E;
-    border-radius: 16px;
-    cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.1s ease;
-}
-
-/* Адаптація під світлу тему */
-[data-theme="light"] .chat-item {
-    background-color: #FFFFFF;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
-}
-
-.chat-item:active {
-    transform: scale(0.98); /* Легкий відгук на клік */
-}
-
-.chat-avatar {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    object-fit: cover;
-    margin-right: 14px;
-}
-
-.chat-info {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    /* Захист від вилізання довгого тексту за межі */
-    min-width: 0; 
-}
-
-.chat-info-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.chat-name {
-    font-weight: 600;
-    font-size: 15px;
-    color: var(--text-color);
-}
-
-.chat-time {
-    font-size: 12px;
-    color: #888888;
-}
-
-.chat-info-bottom {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-}
-
-.chat-last-message {
-    font-size: 13px;
-    color: #888888;
-    /* Робимо так, щоб довгий текст обрізався трикрапкою в один рядок */
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    flex-grow: 1;
-}
-
-/* --- СТИЛІ ДЛЯ НЕПРОЧИТАНИХ ЧАТІВ --- */
-.chat-item.unread .chat-name {
-    color: var(--accent-color); /* Виділяємо ім'я користувача */
-}
-
-.chat-item.unread .chat-last-message {
-    color: var(--text-color); /* Текст повідомлення стає яскравішим */
-    font-weight: 500;
-}
-
-/* Маленька кругла крапка-індикатор */
-.unread-badge {
-    width: 8px;
-    height: 8px;
-    background-color: var(--accent-color); /* Наш чіткий акцентний білий/чорний колір */
-    border-radius: 50%;
-    flex-shrink: 0;
-}
-
 /* ==========================================
-   ВІКНО АКТИВНОГО ЧАТУ
+   THREADS-STYLE ЧАТ (Ультра-мінімалізм)
    ========================================== */
-.chat-room-modal {
-    position: absolute; 
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: var(--bg-color, #121212);
-    color: var(--text-primary, #ffffff);
-    z-index: 1000;
-    flex-direction: column;
-    display: none; /* ВАЖЛИВО: За замовчуванням приховано! */
-}
-
-/* Вікно стає flex тільки тоді, коли ми знімаємо з нього клас hidden через JavaScript */
-.chat-room-modal:not(.hidden) {
-    display: flex;
-}
 
 /* 1. Обмежуємо ширину чату до ширини стрічки постів */
 .chat-wrapper {
@@ -150,7 +18,7 @@
     padding: 20px 15px;
     display: flex;
     flex-direction: column;
-    gap: 12px; /* Трохи більше повітря між повідомленнями */
+    gap: 12px;
 }
 
 /* 2. Бульбашки повідомлень (Капсульний дизайн) */
@@ -165,22 +33,20 @@
     position: relative;
 }
 
-/* Мої повідомлення (Високий контраст) */
+/* Мої повідомлення (Темні, високий контраст) */
 .chat-message.sent {
     align-self: flex-end;
-    background-color: var(--text-primary);
-    color: var(--bg-color);
-    /* Дуже круглі кути, крім правого нижнього "хвостика" */
+    background-color: var(--text-primary, #000000);
+    color: var(--bg-color, #ffffff);
     border-radius: 24px 24px 6px 24px; 
 }
 
-/* Чужі повідомлення (М'який сірий фон без рамок) */
+/* Чужі повідомлення (М'який сірий фон, як в Threads) */
 .chat-message.received {
     align-self: flex-start;
-    background-color: var(--bg-secondary);
-    color: var(--text-primary);
+    background-color: var(--bg-secondary, #f0f0f0);
+    color: var(--text-primary, #000000);
     border: none;
-    /* Дуже круглі кути, крім лівого нижнього "хвостика" */
     border-radius: 24px 24px 24px 6px;
 }
 
@@ -207,37 +73,41 @@
     display: flex;
     gap: 12px;
     align-items: center;
-    background-color: var(--bg-color);
+    background-color: var(--bg-color, #ffffff);
     padding-bottom: max(15px, env(safe-area-inset-bottom));
-    border-top: 1px solid var(--border-color); /* Ледь помітна лінія відділення */
+    border-top: 1px solid var(--border-color, #eaeaea);
 }
 
 .chat-room-input-area input {
     flex: 1;
-    background-color: var(--bg-secondary); /* М'який сірий фон */
-    border: none; /* Жодних рамок! */
-    border-radius: 24px; /* Повна капсула */
+    background-color: var(--bg-secondary, #f0f0f0); 
+    border: 1px solid transparent;
+    border-radius: 24px;
     padding: 14px 20px;
-    color: var(--text-primary);
+    color: var(--text-primary, #000000);
     outline: none;
     font-size: 15px;
+}
+
+.chat-room-input-area input:focus {
+    border: 1px solid var(--border-color, #cccccc);
 }
 
 /* 5. Кнопка відправлення (Акуратна і контрастна) */
 .chat-room-input-area button {
     background-color: transparent;
-    color: var(--text-primary); 
+    color: var(--text-primary, #000000); 
     border: none;
     width: 44px;
     height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 22px; /* Трохи більша іконка */
+    font-size: 22px; 
     cursor: pointer;
     transition: transform 0.1s;
 }
 
 .chat-room-input-area button:active {
-    transform: scale(0.9); /* Приємна анімація кліку */
+    transform: scale(0.9);
 }
