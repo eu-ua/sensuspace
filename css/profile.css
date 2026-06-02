@@ -227,3 +227,26 @@
 
 .toggle-switch.active { background-color: #34C759; /* Зелений колір як на iPhone */ }
 .toggle-switch.active::after { transform: translateX(20px); }
+
+/* Ховаємо значок олівця на аватарці за замовчуванням */
+.avatar-wrapper .edit-badge {
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out; /* Плавна анімація появи */
+}
+
+/* Показуємо значок при наведенні курсору на всю область аватарки */
+.avatar-wrapper:hover .edit-badge {
+    opacity: 1;
+}
+
+/* БОНУС: Те саме для олівців біля нікнейму та біографії (щоб усе було в єдиному стилі) */
+.profile-nickname .edit-icon,
+.profile-bio .edit-icon {
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+}
+
+.profile-nickname:hover .edit-icon,
+.profile-bio:hover .edit-icon {
+    opacity: 1;
+}

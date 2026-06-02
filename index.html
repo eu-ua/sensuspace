@@ -117,34 +117,15 @@
                 <button class="icon-btn"><i class="bi bi-pencil-square"></i></button>
             </div>
 
-            <div class="chat-list">
-                <div class="chat-item unread">
-                    <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop" alt="User Avatar" class="chat-avatar">
-                    <div class="chat-info">
-                        <div class="chat-info-top">
-                            <span class="chat-name">Проект "Музика"</span>
-                            <span class="chat-time">12:40</span>
-                        </div>
-                        <div class="chat-info-bottom">
-                            <p class="chat-last-message">Привіт! Подивіться новий чернетку треку, яку я завантажив у глобальний розділ...</p>
-                            <span class="unread-badge"></span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="chat-item">
-                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop" alt="User Avatar" class="chat-avatar">
-                    <div class="chat-info">
-                        <div class="chat-info-top">
-                            <span class="chat-name">Олександр</span>
-                            <span class="chat-time">Вчора</span>
-                        </div>
-                        <div class="chat-info-bottom">
-                            <p class="chat-last-message">Дякую за відгук під моїм віршем! Це дуже надихає.</p>
-                        </div>
-                    </div>
-                </div>
+            <section id="screen-messages" class="app-screen">
+            <div class="chat-header">
+                <h2>Повідомлення</h2>
+                <button class="icon-btn"><i class="bi bi-pencil-square"></i></button>
             </div>
+
+            <div id="dynamic-chat-list" class="chat-list">
+                </div>
+        </section>
         </section>
 
 
@@ -388,6 +369,45 @@
                     <input type="file" id="video-input" accept="video/*" hidden>
                 </div>
             </div>
+        </div>
+
+        <div id="custom-modal" class="popup-modal hidden">
+            <div class="popup-content" style="max-width: 320px; text-align: center; margin: auto; border-radius: 20px;">
+                <h3 id="custom-modal-title" class="sheet-title" style="margin-bottom: 10px; justify-content: center;">Повідомлення</h3>
+                <p id="custom-modal-message" style="color: var(--text-secondary); margin-bottom: 20px; font-size: 14px;"></p>
+                
+                <input type="text" id="custom-modal-input" class="search-modal-input hidden" style="width: 100%; margin-bottom: 20px; text-align: center; background: var(--bg-color);">
+                
+                <div style="display: flex; gap: 10px; justify-content: center;">
+                    <button id="custom-modal-cancel" class="action-btn hidden" style="flex: 1; padding: 10px; justify-content: center; background: var(--bg-color); border-radius: 12px;">Скасувати</button>
+                    <button id="custom-modal-confirm" class="text-btn-accent" style="flex: 1; padding: 10px; justify-content: center; background: var(--accent-color); color: white; border-radius: 12px;">ОК</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ВІКНО АКТИВНОГО ЧАТУ -->
+        <div id="chat-room-modal" class="chat-room-modal hidden">
+            
+            <!-- Шапка чату -->
+            <div class="chat-room-header">
+                <button id="close-chat-room-btn" class="icon-btn"><i class="bi bi-arrow-left"></i></button>
+                <div class="chat-room-user-info">
+                    <img id="chat-room-avatar" src="" alt="Avatar">
+                    <h3 id="chat-room-name">Ім'я</h3>
+                </div>
+            </div>
+            
+            <!-- Область повідомлень -->
+            <div id="chat-messages-container" class="chat-messages-container">
+                <!-- Тут будуть з'являтися бульбашки повідомлень -->
+            </div>
+
+            <!-- Поле вводу -->
+            <div class="chat-room-input-area">
+                <input type="text" id="chat-message-input" placeholder="Написати повідомлення..." autocomplete="off">
+                <button id="send-message-btn" class="icon-btn"><i class="bi bi-send-fill"></i></button>
+            </div>
+            
         </div>
 
     </div>

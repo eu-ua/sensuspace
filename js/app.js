@@ -1,9 +1,59 @@
 import './auth.js';
 import { db, auth } from './firebase-config.js';
-import { collection, addDoc, getDocs, doc, updateDoc, arrayUnion, arrayRemove, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { collection, addDoc, doc, updateDoc, deleteDoc, arrayUnion, arrayRemove, query, orderBy, onSnapshot, serverTimestamp, where, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
 document.addEventListener('DOMContentLoaded', () => {
     
+    // ==========================================
+    // УНІВЕРСАЛЬНЕ КАСТОМНЕ ВІКНО (Заміна alert/prompt/confirm)
+    // ==========================================
+    function showCustomModal({ title, message, type = 'alert' }) {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('custom-modal');
+            const titleEl = document.getElementById('custom-modal-title');
+            const messageEl = document.getElementById('custom-modal-message');
+            const inputEl = document.getElementById('custom-modal-input');
+            const confirmBtn = document.getElementById('custom-modal-confirm');
+            const cancelBtn = document.getElementById('custom-modal-cancel');
+
+            titleEl.textContent = title;
+            messageEl.textContent = message;
+            inputEl.value = '';
+
+            inputEl.classList.add('hidden');
+            cancelBtn.classList.add('hidden');
+
+            if (type === 'confirm' || type === 'prompt') {
+                cancelBtn.classList.remove('hidden');
+            }
+            if (type === 'prompt') {
+                inputEl.classList.remove('hidden');
+            }
+
+            modal.classList.remove('hidden');
+            if (type === 'prompt') inputEl.focus();
+
+            const cleanup = () => {
+                modal.classList.add('hidden');
+                confirmBtn.onclick = null;
+                cancelBtn.onclick = null;
+            };
+
+            confirmBtn.onclick = () => {
+                cleanup();
+                if (type === 'prompt') resolve(inputEl.value);
+                else resolve(true);
+            };
+
+            cancelBtn.onclick = () => {
+                cleanup();
+                if (type === 'prompt') resolve(null);
+                else resolve(false);
+            };
+        });
+    }
+
     // 1. НАВІГАЦІЯ (НИЖНЯ ПАНЕЛЬ)
     const navButtons = document.querySelectorAll('.nav-btn');
     const screens = document.querySelectorAll('.app-screen');
@@ -22,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // 2. МОДАЛЬНІ ВІКНА (Налаштування, Фільтри, Створення посту)
+    // 2. МОДАЛЬНІ ВІКНА
     const settingsModal = document.getElementById('settings-modal');
     const filterModal = document.getElementById('filter-modal');
     const createPostModal = document.getElementById('create-post-modal');
@@ -43,11 +93,13 @@ document.addEventListener('DOMContentLoaded', () => {
         closeCreatePostBtn.addEventListener('click', () => createPostModal.classList.add('hidden'));
     }
 
-    // Закриття будь-якого вікна при кліку на темний фон
     window.addEventListener('click', (e) => {
         if (e.target === settingsModal) settingsModal.classList.add('hidden');
         if (e.target === filterModal) filterModal.classList.add('hidden');
         if (e.target === createPostModal) createPostModal.classList.add('hidden');
+        if (e.target === document.getElementById('custom-modal')) {
+            // Запобігаємо закриттю кастомного вікна по кліку на фон, щоб не губилися дані
+        }
     });
 
     // 3. ЗМІНА ТЕМИ
@@ -67,9 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ==========================================
     // 5. ЛОГІКА ПРИКРІПЛЕННЯ МЕДІА (ФОТО/ВІДЕО)
-    // ==========================================
     const attachImageBtn = document.getElementById('attach-image-btn');
     const attachVideoBtn = document.getElementById('attach-video-btn');
     const imageInput = document.getElementById('image-input');
@@ -80,49 +130,43 @@ document.addEventListener('DOMContentLoaded', () => {
     const videoPreview = document.getElementById('video-preview');
     const removeMediaBtn = document.getElementById('remove-media-btn');
 
-    let currentSelectedFile = null; // Тут ми будемо зберігати файл для відправки в базу
+    let currentSelectedFile = null; 
 
-    // Клікаємо на наші красиві іконки -> вони клікають на приховані системні інпути
     if (attachImageBtn) attachImageBtn.addEventListener('click', () => imageInput.click());
     if (attachVideoBtn) attachVideoBtn.addEventListener('click', () => videoInput.click());
 
-    // Функція показу файлу на екрані
     function handleFileSelection(file, type) {
         if (!file) return;
         currentSelectedFile = file;
         mediaPreviewContainer.classList.remove('hidden');
 
-        // Створюємо тимчасове посилання на файл для прев'ю
         const fileURL = URL.createObjectURL(file);
 
         if (type === 'image') {
             imagePreview.src = fileURL;
             imagePreview.classList.remove('hidden');
             videoPreview.classList.add('hidden');
-            videoPreview.src = ""; // Очищаємо відео, якщо вибрали фото
+            videoPreview.src = ""; 
         } else if (type === 'video') {
             videoPreview.src = fileURL;
             videoPreview.classList.remove('hidden');
             imagePreview.classList.add('hidden');
-            imagePreview.src = ""; // Очищаємо фото, якщо вибрали відео
+            imagePreview.src = ""; 
         }
     }
 
-    // Слухаємо вибір фотографії
     if (imageInput) {
         imageInput.addEventListener('change', (e) => {
             handleFileSelection(e.target.files[0], 'image');
         });
     }
 
-    // Слухаємо вибір відео
     if (videoInput) {
         videoInput.addEventListener('change', (e) => {
             handleFileSelection(e.target.files[0], 'video');
         });
     }
 
-    // Логіка видалення вибраного медіа (хрестик на фото)
     if (removeMediaBtn) {
         removeMediaBtn.addEventListener('click', () => {
             currentSelectedFile = null;
@@ -143,38 +187,31 @@ document.addEventListener('DOMContentLoaded', () => {
     if (submitPostBtn) {
         submitPostBtn.addEventListener('click', async () => {
             const text = postTextInput.value.trim();
-            const user = auth.currentUser; // Перевіряємо, хто зараз увійшов
+            const user = auth.currentUser; 
 
-            // Захист: якщо гість якимось дивом відкрив вікно
             if (!user) {
-                alert("Будь ласка, увійдіть, щоб створити публікацію.");
+                await showCustomModal({ title: "Увага", message: "Будь ласка, увійдіть, щоб створити публікацію." });
                 return;
             }
 
-            // Перевірка, чи не порожній пост
             if (!text && !currentSelectedFile) {
-                alert("Додайте текст або виберіть медіафайл!");
+                await showCustomModal({ title: "Порожньо", message: "Додайте текст або виберіть медіафайл!" });
                 return;
             }
 
-            // Змінюємо кнопку, щоб користувач бачив процес
             const originalBtnText = submitPostBtn.textContent;
             submitPostBtn.textContent = 'Публікуємо...';
-            submitPostBtn.disabled = true; // Блокуємо від подвійного кліку
+            submitPostBtn.disabled = true; 
 
             try {
                 let mediaUrl = null;
                 let mediaType = null;
 
-                // 1. ЯКЩО Є ФАЙЛ: Відправляємо в Cloudinary
                 if (currentSelectedFile) {
                     const formData = new FormData();
                     formData.append('file', currentSelectedFile);
-                    
                     formData.append('upload_preset', 'sensuspace'); 
 
-                    // Твоє посилання Cloudinary (я вже вставив твій cloud_name: dabzs7jkc)
-                    // /auto/ означає, що хмара сама зрозуміє, фото це чи відео
                     const cloudinaryUrl = `https://api.cloudinary.com/v1_1/dabzs7jkc/auto/upload`;
 
                     const response = await fetch(cloudinaryUrl, {
@@ -185,46 +222,40 @@ document.addEventListener('DOMContentLoaded', () => {
                     const data = await response.json();
                     
                     if (data.secure_url) {
-                        mediaUrl = data.secure_url; // Отримуємо готове посилання
-                        mediaType = data.resource_type; // Отримуємо тип ('image' або 'video')
+                        mediaUrl = data.secure_url; 
+                        mediaType = data.resource_type; 
                     } else {
                         throw new Error('Помилка завантаження файлу в хмару');
                     }
                 }
 
-                // 2. ЗБЕРІГАЄМО ВСЕ У FIREBASE
-                // Створюємо нову "папку" (колекцію) posts у базі даних
                 await addDoc(collection(db, "posts"), {
                     text: text,
                     mediaUrl: mediaUrl,
                     mediaType: mediaType,
                     authorId: user.uid,
-                    // Поки нікнеймів немає, беремо першу частину логіна (пошти)
                     authorName: user.email.split('@')[0], 
-                    createdAt: serverTimestamp() // Точний час серверів Google
+                    createdAt: serverTimestamp(),
+                    likedBy: [] 
                 });
 
-                // 3. ОЧИЩАЄМО ВІКНО ПІСЛЯ УСПІХУ
                 postTextInput.value = '';
-                if (removeMediaBtn) removeMediaBtn.click(); // Емулюємо натискання на хрестик медіа
-                createPostModal.classList.add('hidden'); // Ховаємо вікно
+                if (removeMediaBtn) removeMediaBtn.click(); 
+                createPostModal.classList.add('hidden'); 
                 
-                alert("Успішно опубліковано!");
+                await showCustomModal({ title: "Успіх", message: "Публікацію успішно створено!" });
 
             } catch (error) {
                 console.error("Помилка публікації:", error);
-                alert("Сталася помилка. Перевірте з'єднання з інтернетом.");
+                await showCustomModal({ title: "Помилка", message: "Сталася помилка. Перевірте з'єднання з інтернетом." });
             } finally {
-                // Повертаємо кнопку в нормальний стан
                 submitPostBtn.textContent = originalBtnText;
                 submitPostBtn.disabled = false;
             }
         });
     }
 
-    // ==========================================
     // 7. ВИТЯГУЄМО ПОСТИ З БАЗИ (РЕАЛЬНИЙ ЧАС)
-    // ==========================================
     const feedContainer = document.querySelector('.feed-container');
 
     if (feedContainer) {
@@ -232,12 +263,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         onSnapshot(q, (snapshot) => {
             feedContainer.innerHTML = ''; 
-            const user = auth.currentUser; // Дізнаємося, хто зараз авторизований
+            const user = auth.currentUser; 
 
-            // Використовуємо назву postDoc, щоб не було конфлікту з інструментом doc()
             snapshot.forEach((postDoc) => {
                 const post = postDoc.data();
-                const postId = postDoc.id; // Унікальний ідентифікатор цього запису
+                const postId = postDoc.id; 
                 
                 let timeString = 'Щойно';
                 if (post.createdAt) {
@@ -254,53 +284,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
-                // ПЕРЕВІРКА: чи поточний користувач є автором цього поста?
                 const isAuthor = user && post.authorId === user.uid;
+                
+                const likedBy = post.likedBy || []; 
+                const likesCount = likedBy.length;
+                const isLikedByMe = user ? likedBy.includes(user.uid) : false;
 
                 const postElement = document.createElement('div');
                 postElement.classList.add('post-card');
                 
-                // 1. Рахуємо лайки та перевіряємо, чи є серед них лайк поточного юзера
-                const likedBy = post.likedBy || []; // Беремо список лайків або створюємо порожній
-                const likesCount = likedBy.length;
-                // Перевіряємо, чи юзер авторизований і чи є його ID у списку лайків
-                const isLikedByMe = auth.currentUser ? likedBy.includes(auth.currentUser.uid) : false;
-                
-                postElement.innerHTML = `
-    <div class="post-header">
-        <div class="avatar-wrapper" style="width: 40px; height: 40px; overflow: hidden; border-radius: 50%;">
-            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop" style="width: 100%; height: 100%; object-fit: cover;" alt="Avatar">
-        </div>
-        <div class="post-user-info">
-            <span class="post-username">${post.authorName}</span>
-            <span class="post-time">${timeString}</span>
-        </div>
-        
-        ${isAuthor 
-            ? `<button class="post-menu-btn delete-post-btn" title="Видалити"><i class="bi bi-trash" style="color: #ff4444;"></i></button>` 
-            : `<button class="post-menu-btn"><i class="bi bi-three-dots"></i></button>`
-        }
-    </div>
-    
-    <div class="post-content">
-        ${post.text ? `<p class="post-text">${post.text}</p>` : ''}
-        ${mediaHTML}
-    </div>
-
-    <div class="post-actions">
-        <!-- ОНОВЛЕНА КНОПКА ЛАЙКУ -->
-        <button class="action-btn like-btn" data-id="${post.id}">
-            <i class="bi ${isLikedByMe ? 'bi-heart-fill' : 'bi-heart'}" style="${isLikedByMe ? 'color: #ff4444;' : ''}"></i> 
-            <span class="likes-count">${likesCount}</span>
-        </button>
-        <!-- КІНЕЦЬ ОНОВЛЕНОЇ КНОПКИ -->
-        
-        <button class="action-btn"><i class="bi bi-chat"></i> <span>0</span></button>
-        <button class="action-btn"><i class="bi bi-arrow-repeat"></i></button>
-        <button class="action-btn"><i class="bi bi-send"></i></button>
-    </div>
-`;
-
                 postElement.innerHTML = `
                     <div class="post-header">
                         <div class="avatar-wrapper" style="width: 40px; height: 40px; overflow: hidden; border-radius: 50%;">
@@ -310,42 +302,45 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span class="post-username">${post.authorName}</span>
                             <span class="post-time">${timeString}</span>
                         </div>
-                        
+            
                         ${isAuthor 
                             ? `<button class="post-menu-btn delete-post-btn" title="Видалити"><i class="bi bi-trash" style="color: #ff4444;"></i></button>` 
                             : `<button class="post-menu-btn"><i class="bi bi-three-dots"></i></button>`
                         }
                     </div>
-                    
+        
                     <div class="post-content">
                         ${post.text ? `<p class="post-text">${post.text}</p>` : ''}
                         ${mediaHTML}
                     </div>
 
                     <div class="post-actions">
-                        <button class="action-btn"><i class="bi bi-heart"></i> <span>0</span></button>
+                        <button class="action-btn like-btn" data-id="${postId}">
+                            <i class="bi ${isLikedByMe ? 'bi-heart-fill' : 'bi-heart'}" style="${isLikedByMe ? 'color: #ff4444;' : ''}"></i> 
+                            <span class="likes-count">${likesCount}</span>
+                        </button>
+                        
                         <button class="action-btn"><i class="bi bi-chat"></i> <span>0</span></button>
                         <button class="action-btn"><i class="bi bi-arrow-repeat"></i></button>
-                        <button class="action-btn"><i class="bi bi-send"></i></button>
+                        <button class="action-btn dm-btn" data-author-id="${post.authorId}" data-author-name="${post.authorName}"><i class="bi bi-send"></i></button>
                     </div>
                 `;
                 
-                // Якщо це пост автора, додаємо логіку видалення
                 if (isAuthor) {
                     const deleteBtn = postElement.querySelector('.delete-post-btn');
                     deleteBtn.addEventListener('click', async () => {
-                        const confirmed = confirm('Ви впевнені, що хочете назавжди видалити цей запис?');
+                        const confirmed = await showCustomModal({ 
+                            title: "Видалення", 
+                            message: "Ви впевнені, що хочете назавжди видалити цей запис?", 
+                            type: "confirm" 
+                        });
+                        
                         if (confirmed) {
                             try {
-                                // Видаляємо запис із бази даних
                                 await deleteDoc(doc(db, "posts", postId));
-                                
-                                // Зверни увагу: нам не треба вручну видаляти HTML-блок!
-                                // onSnapshot миттєво побачить, що в базі стало на 1 запис менше,
-                                // і сам автоматично перемалює стрічку.
                             } catch (error) {
                                 console.error("Помилка видалення:", error);
-                                alert("Не вдалося видалити запис. Перевірте з'єднання.");
+                                await showCustomModal({ title: "Помилка", message: "Не вдалося видалити запис." });
                             }
                         }
                     });
@@ -356,56 +351,378 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-// Слухаємо всі кліки на сторінці
-document.addEventListener('click', async (e) => {
-    // Шукаємо, чи клік був саме по кнопці з класом .like-btn (або по іконці всередині неї)
-    const likeBtn = e.target.closest('.like-btn');
-    if (!likeBtn) return; // Якщо клік по іншому місцю — нічого не робимо
+    // ==========================================
+    // 8. СЛУХАЧ КЛІКІВ (ЛАЙКИ ТА ЧАТИ)
+    // ==========================================
+    document.addEventListener('click', async (e) => {
+        
+        // --- ОБРОБКА ЛАЙКІВ ---
+        const likeBtn = e.target.closest('.like-btn');
+        if (likeBtn) {
+            const user = auth.currentUser;
+            if (!user) {
+                await showCustomModal({ title: "Увага", message: "Будь ласка, увійдіть, щоб залишати вподобайки." });
+                return;
+            }
 
-    const user = auth.currentUser;
-    if (!user) {
-        alert("Будь ласка, увійдіть, щоб залишати вподобайки.");
-        return;
-    }
+            const postId = likeBtn.dataset.id;
+            const postRef = doc(db, "posts", postId);
+            const icon = likeBtn.querySelector('i');
+            const countSpan = likeBtn.querySelector('.likes-count');
+            let currentCount = parseInt(countSpan.textContent) || 0;
+            const isCurrentlyLiked = icon.classList.contains('bi-heart-fill');
 
-    const postId = likeBtn.dataset.id;
-    const postRef = doc(db, "posts", postId);
-    
-    // Знаходимо іконку та лічильник всередині конкретно цієї кнопки
-    const icon = likeBtn.querySelector('i');
-    const countSpan = likeBtn.querySelector('.likes-count');
-    let currentCount = parseInt(countSpan.textContent);
-    
-    // Перевіряємо поточний стан (чи стоїть вже лайк)
-    const isCurrentlyLiked = icon.classList.contains('bi-heart-fill');
-
-    try {
-        if (isCurrentlyLiked) {
-            // ВІДМІНА ЛАЙКУ
-            // 1. Миттєво міняємо візуал (Optimistic UI)
-            icon.classList.replace('bi-heart-fill', 'bi-heart');
-            icon.style.color = ''; // прибираємо червоний колір
-            countSpan.textContent = currentCount - 1;
-
-            // 2. Відправляємо на сервер команду видалити ID зі списку
-            await updateDoc(postRef, {
-                likedBy: arrayRemove(user.uid)
-            });
-        } else {
-            // СТАВИМО ЛАЙК
-            // 1. Миттєво міняємо візуал
-            icon.classList.replace('bi-heart', 'bi-heart-fill');
-            icon.style.color = '#ff4444'; // червоний колір
-            countSpan.textContent = currentCount + 1;
-
-            // 2. Відправляємо на сервер команду додати ID в список
-            await updateDoc(postRef, {
-                likedBy: arrayUnion(user.uid)
-            });
+            try {
+                if (isCurrentlyLiked) {
+                    icon.classList.replace('bi-heart-fill', 'bi-heart');
+                    icon.style.color = ''; 
+                    countSpan.textContent = currentCount - 1;
+                    await updateDoc(postRef, { likedBy: arrayRemove(user.uid) });
+                } else {
+                    icon.classList.replace('bi-heart', 'bi-heart-fill');
+                    icon.style.color = '#ff4444'; 
+                    countSpan.textContent = currentCount + 1;
+                    await updateDoc(postRef, { likedBy: arrayUnion(user.uid) });
+                }
+            } catch (error) {
+                console.error("Помилка обробки лайку:", error);
+            }
+            return; // Зупиняємо код тут, якщо це був лайк
         }
-    } catch (error) {
-        console.error("Помилка обробки лайку:", error);
+
+        // --- ОБРОБКА ЛІТАЧКА (ВІДКРИТТЯ ЧАТУ) ---
+        const dmBtn = e.target.closest('.dm-btn');
+        if (dmBtn) {
+            const authorId = dmBtn.dataset.authorId;
+            const authorName = dmBtn.dataset.authorName;
+            
+            // Запускаємо функцію чату, яку ми додали в кінці файлу
+            if (window.openChatWithUser) {
+                window.openChatWithUser(authorId, authorName, null);
+            }
+            return;
+        }
+    });
+
+    // 9. ОСОБИСТИЙ ПРОФІЛЬ (ТІЛЬКИ ТВОЇ ПОСТИ)
+    const profileGrid = document.querySelector('.profile-grid');
+
+    if (profileGrid) {
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                const qProfile = query(
+                    collection(db, "posts"), 
+                    where("authorId", "==", user.uid), 
+                    orderBy("createdAt", "desc")
+                );
+
+                onSnapshot(qProfile, (snapshot) => {
+                    profileGrid.innerHTML = ''; 
+                    
+                    if (snapshot.empty) {
+                        profileGrid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: #888;">Тут поки порожньо...</p>';
+                        return;
+                    }
+
+                    snapshot.forEach((postDoc) => {
+                        const post = postDoc.data();
+                        const tile = document.createElement('div');
+                        tile.classList.add('profile-post-tile');
+                        
+                        if (post.mediaType === 'image' && post.mediaUrl) {
+                            tile.innerHTML = `<img src="${post.mediaUrl}" alt="Post image">`;
+                        } else if (post.mediaType === 'video' && post.mediaUrl) {
+                            tile.innerHTML = `<video src="${post.mediaUrl}" muted></video>`;
+                        } else if (post.text) {
+                            tile.innerHTML = `
+                                <div class="text-post-preview">
+                                    <p>${post.text}</p>
+                                </div>
+                            `;
+                        }
+                        
+                        profileGrid.appendChild(tile);
+                    });
+                });
+            } else {
+                profileGrid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: #888;">Увійдіть, щоб бачити свої публікації.</p>';
+            }
+        });
     }
-});
+
+    // 10. РЕДАГУВАННЯ ПРОФІЛЮ (Аватар, Нікнейм, Біо)
+    const profileAvatar = document.querySelector('.profile-main-avatar');
+    const profileNickname = document.querySelector('.profile-nickname');
+    const profileBio = document.querySelector('.profile-bio');
+    const avatarWrapper = document.querySelector('.avatar-wrapper.cursor-pointer');
+
+    if (profileAvatar && profileNickname && profileBio) {
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const userRef = doc(db, "users", user.uid);
+                const userSnap = await getDoc(userRef);
+
+                if (userSnap.exists()) {
+                    const data = userSnap.data();
+                    if (data.avatarUrl) profileAvatar.src = data.avatarUrl;
+                    if (data.nickname) profileNickname.innerHTML = `${data.nickname} <i class="bi bi-pencil edit-icon"></i>`;
+                    if (data.bio) profileBio.innerHTML = `${data.bio} <i class="bi bi-pencil edit-icon"></i>`;
+                } else {
+                    profileNickname.innerHTML = `${user.email.split('@')[0]} <i class="bi bi-pencil edit-icon"></i>`;
+                }
+            }
+        });
+
+        profileNickname.addEventListener('click', async () => {
+            const user = auth.currentUser;
+            if (!user) return;
+            
+            const newNickname = await showCustomModal({ 
+                title: "Зміна імені", 
+                message: "Введіть новий нікнейм:", 
+                type: "prompt" 
+            });
+            
+            if (newNickname && newNickname.trim() !== "") {
+                const userRef = doc(db, "users", user.uid);
+                await setDoc(userRef, { nickname: newNickname.trim() }, { merge: true });
+                profileNickname.innerHTML = `${newNickname.trim()} <i class="bi bi-pencil edit-icon"></i>`;
+            }
+        });
+
+        profileBio.addEventListener('click', async () => {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            const newBio = await showCustomModal({ 
+                title: "Про себе", 
+                message: "Напишіть кілька слів про себе (чим ви надихаєтесь, що шукаєте):", 
+                type: "prompt" 
+            });
+            
+            if (newBio && newBio.trim() !== "") {
+                const userRef = doc(db, "users", user.uid);
+                await setDoc(userRef, { bio: newBio.trim() }, { merge: true });
+                profileBio.innerHTML = `${newBio.trim()} <i class="bi bi-pencil edit-icon"></i>`;
+            }
+        });
+
+        const avatarInput = document.createElement('input');
+        avatarInput.type = 'file';
+        avatarInput.accept = 'image/*';
+
+        avatarWrapper.addEventListener('click', () => {
+            avatarInput.click();
+        });
+
+        avatarInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const user = auth.currentUser;
+            if (!user) return;
+
+            const originalSrc = profileAvatar.src;
+            profileAvatar.style.opacity = "0.5";
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('upload_preset', 'sensuspace');
+
+                const response = await fetch(`https://api.cloudinary.com/v1_1/dabzs7jkc/image/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.secure_url) {
+                    const userRef = doc(db, "users", user.uid);
+                    await setDoc(userRef, { avatarUrl: data.secure_url }, { merge: true });
+                    profileAvatar.src = data.secure_url; 
+                } else {
+                    profileAvatar.src = originalSrc;
+                    await showCustomModal({ title: "Помилка", message: "Не вдалося завантажити фотографію." });
+                }
+            } catch (error) {
+                console.error("Помилка аватарки:", error);
+                profileAvatar.src = originalSrc;
+            } finally {
+                profileAvatar.style.opacity = "1";
+            }
+        });
+    }
+
+    // ==========================================
+    // 11. ОСОБИСТІ ПОВІДОМЛЕННЯ (ЛОГІКА ЧАТУ)
+    // ==========================================
+    const chatRoomModal = document.getElementById('chat-room-modal');
+    const closeChatRoomBtn = document.getElementById('close-chat-room-btn');
+    const chatMessagesContainer = document.getElementById('chat-messages-container');
+    const chatMessageInput = document.getElementById('chat-message-input');
+    const sendMessageBtn = document.getElementById('send-message-btn');
+    const chatRoomName = document.getElementById('chat-room-name');
+    const chatRoomAvatar = document.getElementById('chat-room-avatar');
+
+    let currentChatUserId = null;
+    let chatUnsubscribe = null; // Для зупинки прослуховування старих чатів
+
+    // Закриття чату
+    if (closeChatRoomBtn) {
+        closeChatRoomBtn.addEventListener('click', () => {
+            chatRoomModal.classList.add('hidden');
+            if (chatUnsubscribe) chatUnsubscribe(); 
+        });
+    }
+
+    // Секретна формула: створюємо один спільний ID кімнати для двох користувачів
+    function getChatRoomId(uid1, uid2) {
+        return uid1 < uid2 ? `${uid1}_${uid2}` : `${uid2}_${uid1}`;
+    }
+
+    // Функція відкриття чату
+    window.openChatWithUser = async (targetUserId, targetUserName, targetUserAvatar) => {
+        const currentUser = auth.currentUser;
+        if (!currentUser) {
+            await showCustomModal({ title: "Увага", message: "Увійдіть, щоб писати повідомлення." });
+            return;
+        }
+        if (currentUser.uid === targetUserId) {
+            await showCustomModal({ title: "Увага", message: "Ви не можете писати самому собі." });
+            return;
+        }
+
+        currentChatUserId = targetUserId;
+        chatRoomName.textContent = targetUserName || "Користувач";
+        chatRoomAvatar.src = targetUserAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop';
+        
+        chatRoomModal.classList.remove('hidden');
+        chatMessagesContainer.innerHTML = ''; // Очищаємо екран від старого чату
+
+        const roomId = getChatRoomId(currentUser.uid, targetUserId);
+        
+        // Підключаємося до Firebase для читання повідомлень саме цієї кімнати
+        const q = query(
+            collection(db, "chats", roomId, "messages"),
+            orderBy("timestamp", "asc")
+        );
+
+        if (chatUnsubscribe) chatUnsubscribe(); // Відключаємось від попереднього співрозмовника
+
+        // Слухаємо нові повідомлення в реальному часі
+        chatUnsubscribe = onSnapshot(q, (snapshot) => {
+            snapshot.docChanges().forEach((change) => {
+                if (change.type === "added") {
+                    const msgData = change.doc.data();
+                    const isMine = msgData.senderId === currentUser.uid;
+                    
+                    let timeString = '';
+                    if (msgData.timestamp) {
+                        const date = msgData.timestamp.toDate();
+                        timeString = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    }
+
+                    const msgDiv = document.createElement('div');
+                    msgDiv.className = `chat-message ${isMine ? 'sent' : 'received'}`;
+                    msgDiv.innerHTML = `${msgData.text} <span class="chat-message-time">${timeString}</span>`;
+                    
+                    chatMessagesContainer.appendChild(msgDiv);
+                    // Автоматично прокручуємо вниз до останнього повідомлення
+                    chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+                }
+            });
+        });
+    };
+
+    // Відправка повідомлення в базу
+    async function sendMessage() {
+        const text = chatMessageInput.value.trim();
+        const currentUser = auth.currentUser;
+        
+        if (!text || !currentUser || !currentChatUserId) return;
+        
+        const roomId = getChatRoomId(currentUser.uid, currentChatUserId);
+        chatMessageInput.value = ''; // Миттєво очищаємо поле вводу
+        
+        try {
+            await addDoc(collection(db, "chats", roomId, "messages"), {
+                text: text,
+                senderId: currentUser.uid,
+                timestamp: serverTimestamp()
+            });
+        } catch (error) {
+            console.error("Помилка відправки:", error);
+            await showCustomModal({ title: "Помилка", message: "Не вдалося відправити повідомлення." });
+        }
+    }
+
+    if (sendMessageBtn) sendMessageBtn.addEventListener('click', sendMessage);
+    if (chatMessageInput) {
+        chatMessageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+    }
+
+    // ==========================================
+    // 12. СПИСОК КОРИСТУВАЧІВ (ВКЛАДКА ПОВІДОМЛЕНЬ)
+    // ==========================================
+    const dynamicChatList = document.getElementById('dynamic-chat-list');
+
+    if (dynamicChatList) {
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // Витягуємо всіх користувачів з бази
+                const usersQuery = query(collection(db, "users"));
+                
+                onSnapshot(usersQuery, (snapshot) => {
+                    dynamicChatList.innerHTML = ''; // Очищаємо список
+                    
+                    if (snapshot.empty) {
+                        dynamicChatList.innerHTML = '<p style="text-align: center; color: var(--text-secondary); margin-top: 20px;">Тут поки порожньо. Знайдіть когось у стрічці!</p>';
+                        return;
+                    }
+
+                    snapshot.forEach((docSnap) => {
+                        const userData = docSnap.data();
+                        const userId = docSnap.id;
+                        
+                        // Щоб не бачити самого себе в списку діалогів
+                        if (userId === user.uid) return;
+
+                        const userName = userData.nickname || "Користувач";
+                        const userAvatar = userData.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop';
+                        const userBio = userData.bio || 'Натисніть, щоб почати діалог';
+
+                        const chatItem = document.createElement('div');
+                        chatItem.className = 'chat-item';
+                        chatItem.style.cursor = 'pointer'; // Додаємо курсор-руку
+                        
+                        chatItem.innerHTML = `
+                            <img src="${userAvatar}" alt="User" class="chat-avatar">
+                            <div class="chat-info">
+                                <div class="chat-info-top">
+                                    <span class="chat-name">${userName}</span>
+                                </div>
+                                <div class="chat-info-bottom">
+                                    <p class="chat-last-message" style="color: var(--text-secondary); font-size: 13px;">${userBio}</p>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // Головна магія: клік по цій плашці відкриває наш чат!
+                        chatItem.addEventListener('click', () => {
+                            if (window.openChatWithUser) {
+                                window.openChatWithUser(userId, userName, userAvatar);
+                            }
+                        });
+
+                        dynamicChatList.appendChild(chatItem);
+                    });
+                });
+            } else {
+                dynamicChatList.innerHTML = '<p style="text-align: center; color: var(--text-secondary); margin-top: 20px;">Увійдіть, щоб бачити повідомлення.</p>';
+            }
+        });
+    }
+
 
 });

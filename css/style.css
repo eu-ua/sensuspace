@@ -1,3 +1,8 @@
+#app {
+    position: relative; 
+    /* твої інші стилі (max-width, margin тощо) залишаються без змін */
+}
+
 /* --- СИСТЕМА ТЕМ --- */
 :root {
     --bg-color: #121212;
