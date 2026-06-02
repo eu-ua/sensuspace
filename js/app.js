@@ -1,6 +1,6 @@
 import './auth.js';
 import { db, auth } from './firebase-config.js';
-import { collection, addDoc, serverTimestamp, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 document.addEventListener('DOMContentLoaded', () => {
     
@@ -222,28 +222,29 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // ==========================================
     // 7. ВИТЯГУЄМО ПОСТИ З БАЗИ (РЕАЛЬНИЙ ЧАС)
+    // ==========================================
     const feedContainer = document.querySelector('.feed-container');
 
     if (feedContainer) {
-        // Створюємо запит: взяти всі пости і відсортувати від найновіших до найстаріших
         const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
 
-        // onSnapshot - це магія реального часу. Вона спрацьовує одразу і при кожній новій публікації
         onSnapshot(q, (snapshot) => {
-            feedContainer.innerHTML = ''; // Очищаємо стрічку від нашого старого хардкодного вірша
+            feedContainer.innerHTML = ''; 
+            const user = auth.currentUser; // Дізнаємося, хто зараз авторизований
 
-            snapshot.forEach((doc) => {
-                const post = doc.data();
+            // Використовуємо назву postDoc, щоб не було конфлікту з інструментом doc()
+            snapshot.forEach((postDoc) => {
+                const post = postDoc.data();
+                const postId = postDoc.id; // Унікальний ідентифікатор цього запису
                 
-                // Форматуємо час (якщо пост тільки створюється, часу ще може не бути мілісекунду)
                 let timeString = 'Щойно';
                 if (post.createdAt) {
                     const date = post.createdAt.toDate();
                     timeString = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                 }
 
-                // Перевіряємо, чи є медіа, і створюємо для нього HTML
                 let mediaHTML = '';
                 if (post.mediaUrl) {
                     if (post.mediaType === 'image') {
@@ -253,7 +254,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
-                // Створюємо саму картку поста
+                // ПЕРЕВІРКА: чи поточний користувач є автором цього поста?
+                const isAuthor = user && post.authorId === user.uid;
+
                 const postElement = document.createElement('div');
                 postElement.classList.add('post-card');
                 
@@ -266,12 +269,15 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span class="post-username">${post.authorName}</span>
                             <span class="post-time">${timeString}</span>
                         </div>
-                        <button class="post-menu-btn"><i class="bi bi-three-dots"></i></button>
+                        
+                        ${isAuthor 
+                            ? `<button class="post-menu-btn delete-post-btn" title="Видалити"><i class="bi bi-trash" style="color: #ff4444;"></i></button>` 
+                            : `<button class="post-menu-btn"><i class="bi bi-three-dots"></i></button>`
+                        }
                     </div>
                     
                     <div class="post-content">
                         ${post.text ? `<p class="post-text">${post.text}</p>` : ''}
-                        
                         ${mediaHTML}
                     </div>
 
@@ -283,7 +289,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 `;
                 
-                // Додаємо готову картку в стрічку
+                // Якщо це пост автора, додаємо логіку видалення
+                if (isAuthor) {
+                    const deleteBtn = postElement.querySelector('.delete-post-btn');
+                    deleteBtn.addEventListener('click', async () => {
+                        const confirmed = confirm('Ви впевнені, що хочете назавжди видалити цей запис?');
+                        if (confirmed) {
+                            try {
+                                // Видаляємо запис із бази даних
+                                await deleteDoc(doc(db, "posts", postId));
+                                
+                                // Зверни увагу: нам не треба вручну видаляти HTML-блок!
+                                // onSnapshot миттєво побачить, що в базі стало на 1 запис менше,
+                                // і сам автоматично перемалює стрічку.
+                            } catch (error) {
+                                console.error("Помилка видалення:", error);
+                                alert("Не вдалося видалити запис. Перевірте з'єднання.");
+                            }
+                        }
+                    });
+                }
+
                 feedContainer.appendChild(postElement);
             });
         });
