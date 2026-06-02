@@ -1,0 +1,114 @@
+/* --- ШАПКА РОЗДІЛУ ЧАТІВ --- */
+.chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.chat-header h2 {
+    font-size: 24px;
+    font-weight: 700;
+}
+
+/* --- СПИСОК ЧАТІВ --- */
+.chat-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px; /* Мінімалістичний відступ між діалогами */
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.chat-item {
+    display: flex;
+    align-items: center;
+    padding: 14px 16px;
+    background-color: #1E1E1E;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+/* Адаптація під світлу тему */
+[data-theme="light"] .chat-item {
+    background-color: #FFFFFF;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+}
+
+.chat-item:active {
+    transform: scale(0.98); /* Легкий відгук на клік */
+}
+
+.chat-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 14px;
+}
+
+.chat-info {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    /* Захист від вилізання довгого тексту за межі */
+    min-width: 0; 
+}
+
+.chat-info-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.chat-name {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--text-color);
+}
+
+.chat-time {
+    font-size: 12px;
+    color: #888888;
+}
+
+.chat-info-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.chat-last-message {
+    font-size: 13px;
+    color: #888888;
+    /* Робимо так, щоб довгий текст обрізався трикрапкою в один рядок */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-grow: 1;
+}
+
+/* --- СТИЛІ ДЛЯ НЕПРОЧИТАНИХ ЧАТІВ --- */
+.chat-item.unread .chat-name {
+    color: var(--accent-color); /* Виділяємо ім'я користувача */
+}
+
+.chat-item.unread .chat-last-message {
+    color: var(--text-color); /* Текст повідомлення стає яскравішим */
+    font-weight: 500;
+}
+
+/* Маленька кругла крапка-індикатор */
+.unread-badge {
+    width: 8px;
+    height: 8px;
+    background-color: var(--accent-color); /* Наш чіткий акцентний білий/чорний колір */
+    border-radius: 50%;
+    flex-shrink: 0;
+}

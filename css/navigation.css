@@ -1,0 +1,52 @@
+/* --- МОБІЛЬНА ВЕРСІЯ (За замовчуванням) --- */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 60px;
+    background-color: var(--bg-color); /* Зливається з фоном сайту */
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 1000;
+}
+
+.nav-btn {
+    background: none;
+    border: none;
+    color: #888888; /* Нейтральний сірий для неактивних кнопок */
+    cursor: pointer;
+    transition: color 0.2s ease, transform 0.1s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+}
+
+.nav-btn i {
+    font-size: 24px;
+    pointer-events: none;
+}
+
+.nav-btn.active {
+    color: var(--accent-color); /* Колір підтягується з активної теми */
+}
+
+.nav-btn:active {
+    transform: scale(0.9);
+}
+
+/* --- ВЕРСІЯ ДЛЯ ПК (Бокове меню) --- */
+@media (min-width: 768px) {
+    .bottom-nav {
+        top: 0;
+        bottom: auto;
+        left: 0;
+        width: 80px; /* Ширина бокової панелі */
+        height: 100vh; /* На всю висоту екрана */
+        flex-direction: column; /* Вибудовуємо іконки зверху вниз */
+        justify-content: center; /* Центруємо їх по вертикалі */
+        gap: 40px; /* Відстань між іконками */
+    }
+}

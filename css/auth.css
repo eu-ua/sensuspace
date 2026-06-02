@@ -1,0 +1,109 @@
+/* --- МОДАЛЬНЕ ВІКНО АВТОРИЗАЦІЇ --- */
+/* --- МОДАЛЬНЕ ВІКНО АВТОРИЗАЦІЇ --- */
+.auth-modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100vh;
+    /* Використовуємо суцільний темний колір замість прозорості та розмиття */
+    background-color: #000000; 
+    z-index: 5000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+/* Суцільний світлий фон для світлої теми */
+[data-theme="light"] .auth-modal-overlay {
+    background-color: #F8F9FA; 
+}
+
+.auth-modal-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.auth-container {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+    background-color: #1E1E1E;
+    padding: 35px 20px 30px 20px;
+    border-radius: 24px;
+}
+
+[data-theme="light"] .auth-container {
+    background-color: #FFFFFF;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+
+/* Кнопка закриття (Хрестик) */
+.close-modal-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    color: #888888;
+    font-size: 20px;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.close-modal-btn:hover { color: var(--text-color); }
+
+/* Шапка та Вкладки */
+.auth-header-brand { text-align: center; margin-bottom: 25px; }
+.auth-header-brand h2 { font-size: 32px; font-weight: 800; margin-bottom: 5px; color: var(--text-color); }
+.auth-header-brand p { color: #888888; font-size: 14px; }
+
+.auth-tabs { display: flex; margin-bottom: 25px; border-bottom: 2px solid #2D2D2D; }
+[data-theme="light"] .auth-tabs { border-bottom: 2px solid #EAEAEA; }
+
+.auth-tab-btn {
+    flex: 1; background: none; border: none; color: #888888;
+    padding: 12px 0; font-size: 16px; font-weight: 600; cursor: pointer;
+    position: relative; transition: color 0.2s;
+}
+.auth-tab-btn.active { color: var(--text-color); }
+.auth-tab-btn.active::after {
+    content: ''; position: absolute; bottom: -2px; left: 0;
+    width: 100%; height: 2px; background-color: var(--accent-color);
+}
+
+/* Форма вводу та Іконки */
+.auth-form { display: flex; flex-direction: column; gap: 15px; }
+.input-group { position: relative; }
+
+.input-icon-left {
+    position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+    color: #888888; font-size: 18px;
+}
+
+.input-icon-right {
+    position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+    color: #888888; font-size: 18px; cursor: pointer; transition: color 0.2s;
+}
+.input-icon-right:hover { color: var(--text-color); }
+
+.input-group input {
+    width: 100%; background-color: #121212; border: 1px solid #333;
+    color: var(--text-color); padding: 14px 45px; /* Місце для двох іконок */
+    border-radius: 14px; font-size: 15px; transition: border-color 0.2s;
+}
+[data-theme="light"] .input-group input { background-color: #F8F9FA; border: 1px solid #DDD; }
+.input-group input:focus { outline: none; border-color: var(--accent-color); }
+
+/* Кнопки та Помилки */
+.auth-submit-btn {
+    width: 100%; background-color: var(--accent-color); color: var(--bg-color);
+    border: none; padding: 14px; border-radius: 14px; font-size: 16px;
+    font-weight: 700; cursor: pointer; margin-top: 10px;
+}
+.auth-submit-btn:active { transform: scale(0.98); }
+
+.auth-error {
+    color: #FF453A; font-size: 13px; text-align: center;
+    background-color: rgba(255, 69, 58, 0.1); padding: 10px; border-radius: 8px;
+}
+.auth-error.hidden { display: none; }

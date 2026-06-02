@@ -1,0 +1,437 @@
+/* --- ШАПКА З ЛУПОЮ --- */
+.top-header {
+    display: flex;
+    justify-content: space-between; /* Розносить текст і лупу по краях */
+    align-items: center;
+    margin-bottom: 20px;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.top-header h2 {
+    font-size: 24px;
+    font-weight: 700;
+}
+
+/* Додай це під .top-header h2 */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px; /* Відстань між трьома крапками і лупою */
+}
+
+/* Колір галочки для активного фільтра */
+.text-accent {
+    color: var(--accent-color);
+    font-size: 20px;
+}
+
+.icon-btn {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    font-size: 22px;
+    cursor: pointer;
+    transition: transform 0.1s ease;
+}
+
+.icon-btn:active {
+    transform: scale(0.9);
+}
+
+
+
+/* --- ВІКНО ПОШУКУ (Модальне) --- */
+.search-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    background-color: var(--bg-color);
+    z-index: 2000; /* Перекриває навіть нижнє меню */
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    opacity: 1;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* Ховаємо вікно за замовчуванням */
+.search-modal.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(10px); /* Легкий ефект виринання */
+}
+
+.search-modal-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+    
+    /* Нові правила для центрування і ширини */
+    max-width: 600px;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Центруємо також блок з майбутніми результатами пошуку */
+.search-results {
+    max-width: 600px;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.search-modal-input {
+    flex-grow: 1;
+    padding: 10px 16px;
+    background-color: #1E1E1E;
+    border: none;
+    border-radius: 12px;
+    color: var(--text-color);
+    font-size: 16px;
+}
+
+[data-theme="light"] .search-modal-input {
+    background-color: #EAEAEA;
+}
+
+.search-modal-input:focus {
+    outline: none;
+}
+
+.placeholder-text {
+    text-align: center;
+    color: #888888;
+    margin-top: 40px;
+    font-size: 14px;
+}
+
+/* --- СТИЛІ ДЛЯ СТРІЧКИ ТА КАРТОК ПУБЛІКАЦІЙ --- */
+.feed-container {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.post-card {
+    background-color: #1E1E1E;
+    border-radius: 18px;
+    padding: 16px;
+    transition: background-color 0.3s ease;
+}
+
+[data-theme="light"] .post-card {
+    background-color: #FFFFFF;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.post-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.post-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 12px;
+}
+
+.post-user-info {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.post-username {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--text-color);
+}
+
+.post-time {
+    font-size: 12px;
+    color: #888888;
+    margin-top: 2px;
+}
+
+.post-menu-btn {
+    background: none;
+    border: none;
+    color: #888888;
+    cursor: pointer;
+    font-size: 18px;
+    padding: 4px;
+}
+
+.post-content {
+    font-size: 15px;
+    line-height: 1.5;
+    margin-bottom: 14px;
+    color: var(--text-color);
+}
+
+.post-text {
+    white-space: pre-line; 
+}
+
+/* Нижня панель кнопок дій (зменшено відступи) */
+.post-actions {
+    display: flex;
+    justify-content: flex-start; /* Вирівнювання по лівому краю замість розтягування */
+    gap: 25px; /* Зменшений відступ між кнопками */
+    align-items: center;
+    padding-top: 10px;
+    border-top: 1px solid #2D2D2D;
+}
+
+[data-theme="light"] .post-actions {
+    border-top: 1px solid #F2F2F2;
+}
+
+.action-btn {
+    background: none;
+    border: none;
+    color: #888888;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    transition: color 0.2s ease, transform 0.1s ease;
+    padding: 6px 0; /* Прибрали боковий паддінг для акуратності */
+}
+
+.action-btn i {
+    font-size: 20px; /* Трохи збільшили іконки для зручності */
+}
+
+.action-btn:active {
+    transform: scale(0.92);
+}
+
+/* ========================================= */
+/* ЦЕНТРАЛЬНІ МОДАЛЬНІ ВІКНА (POP-UPS)       */
+/* ========================================= */
+
+.popup-modal {
+    position: fixed;
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 6000;
+    display: flex;
+    justify-content: center; 
+    align-items: center; 
+    transition: opacity 0.2s ease;
+}
+
+.popup-content {
+    width: 90%; 
+    max-width: 420px; 
+    background-color: #1E1E1E; 
+    padding: 25px 20px;
+    border-radius: 24px; 
+    transition: transform 0.2s ease, opacity 0.2s ease;
+    transform: scale(1);
+    opacity: 1;
+}
+
+[data-theme="light"] .popup-content {
+    background-color: #FFFFFF;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+.popup-modal.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.popup-modal.hidden .popup-content {
+    transform: scale(0.95); 
+    opacity: 0;
+}
+
+/* Стилі для вікна створення посту */
+.create-post-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.text-btn-accent {
+    background: none;
+    border: none;
+    color: var(--accent-color);
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.text-btn-accent:hover { opacity: 0.8; }
+
+.create-post-body textarea {
+    width: 100%;
+    background: none;
+    border: none;
+    color: var(--text-color);
+    font-size: 16px;
+    line-height: 1.5;
+    resize: none;
+    outline: none;
+    font-family: inherit;
+}
+
+.create-post-body textarea::placeholder {
+    color: #888888;
+}
+
+/* Ховаємо сіру смужку (ручку перетягування), бо для вікон по центру вона вже не має сенсу */
+.sheet-drag-handle {
+    display: none;
+}
+
+/* --- ВІКНО СТВОРЕННЯ ПУБЛІКАЦІЇ --- */
+.create-post-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.text-btn-accent {
+    background: none;
+    border: none;
+    color: var(--accent-color);
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.text-btn-accent:hover {
+    opacity: 0.8;
+}
+
+.create-post-body textarea {
+    width: 100%;
+    background: none;
+    border: none;
+    color: var(--text-color);
+    font-size: 16px;
+    line-height: 1.5;
+    resize: none;
+    outline: none;
+    font-family: inherit;
+}
+
+.create-post-body textarea::placeholder {
+    color: #888888;
+}
+/* --- ПАНЕЛЬ ІНСТРУМЕНТІВ СТВОРЕННЯ ПОСТУ --- */
+.create-post-toolbar {
+    display: flex;
+    gap: 15px;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #333;
+}
+
+[data-theme="light"] .create-post-toolbar {
+    border-top: 1px solid #EAEAEA;
+}
+
+.attach-btn {
+    background: none;
+    border: none;
+    color: var(--accent-color);
+    font-size: 22px;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.attach-btn:hover {
+    opacity: 0.7;
+}
+
+.attach-btn:active {
+    transform: scale(0.9);
+}
+
+/* --- БЛОК ПОПЕРЕДНЬОГО ПЕРЕГЛЯДУ (ПРЕВ'Ю) --- */
+#media-preview-container {
+    position: relative;
+    margin-top: 15px;
+    width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    background-color: #121212;
+}
+
+[data-theme="light"] #media-preview-container {
+    background-color: #F8F9FA;
+}
+
+#media-preview-container.hidden {
+    display: none;
+}
+
+#image-preview, #video-preview {
+    width: 100%;
+    max-height: 250px;
+    object-fit: contain; /* Зберігає пропорції без обрізки */
+    display: block;
+}
+
+#image-preview.hidden, #video-preview.hidden {
+    display: none;
+}
+
+/* Кнопка видалення медіа (Хрестик у кутку прев'ю) */
+.remove-media-icon {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 24px;
+    cursor: pointer;
+    z-index: 10;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    transition: transform 0.2s;
+}
+
+.remove-media-icon:hover {
+    transform: scale(1.1);
+}
+
+/* Медіафайли всередині постів */
+.post-media {
+    width: 100%;
+    max-height: 400px;
+    object-fit: cover;
+    border-radius: 14px;
+    margin-top: 10px;
+    background-color: #121212;
+}
+
+[data-theme="light"] .post-media {
+    background-color: #F8F9FA;
+}
