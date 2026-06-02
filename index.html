@@ -231,14 +231,16 @@
                 <div class="profile-info">
                     <h3 class="profile-nickname cursor-pointer">creative_mind <i class="bi bi-pencil edit-icon"></i></h3>
                     <div class="profile-stats">
-                        <div class="stat-item">
-                            <span class="stat-number">1,240</span>
+                        <div class="profile-stats">
+                        <div class="stat-item cursor-pointer" id="my-followers-btn">
+                            <span class="stat-number" id="my-followers-count">0</span>
                             <span class="stat-label">читачів</span>
                         </div>
-                        <div class="stat-item">
-                            <span class="stat-number">85</span>
+                        <div class="stat-item cursor-pointer" id="my-following-btn">
+                            <span class="stat-number" id="my-following-count">0</span>
                             <span class="stat-label">підписок</span>
                         </div>
+                    </div>
                     </div>
                 </div>
             </div>
@@ -409,6 +411,48 @@
             </div>
             
         </div>
+
+        <div id="other-user-profile-modal" class="app-screen hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 1000; overflow-y: auto;">
+            <div class="profile-top-bar" style="padding: 15px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid var(--border-color);">
+                <button id="close-other-profile-btn" class="icon-btn"><i class="bi bi-arrow-left"></i></button>
+                <h3 style="margin: 0; font-size: 18px;">Профіль</h3>
+            </div>
+
+            <div class="profile-header" style="margin-top: 15px;">
+                <div class="avatar-wrapper">
+                    <img id="other-profile-avatar" src="" alt="Avatar" class="profile-main-avatar">
+                </div>
+                <div class="profile-info">
+                    <h3 id="other-profile-nickname" class="profile-nickname">...</h3>
+                    <div class="profile-stats">
+                        <div class="stat-item">
+                            <span class="stat-number" id="other-followers-count">0</span>
+                            <span class="stat-label">читачів</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="other-following-count">0</span>
+                            <span class="stat-label">підписок</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <p id="other-profile-bio" class="profile-bio">...</p>
+
+            <div style="display: flex; gap: 10px; padding: 0 20px; margin-bottom: 20px;">
+                <button id="follow-user-btn" class="text-btn-accent" style="flex: 1; border-radius: 20px; padding: 10px;">Підписатися</button>
+                <button id="message-user-btn" class="action-btn" style="flex: 1; border-radius: 20px; padding: 10px; background: var(--bg-secondary); border: none; color: var(--text-primary);">Написати</button>
+            </div>
+
+            <div class="profile-tabs">
+                <button class="p-tab-btn active"><i class="bi bi-grid-3x3"></i> Публікації</button>
+            </div>
+
+            <div id="other-profile-grid" class="profile-grid">
+                </div>
+        </div>
+
+
 
     </div>
 

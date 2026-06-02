@@ -1,6 +1,6 @@
 import './auth.js';
 import { db, auth } from './firebase-config.js';
-import { collection, addDoc, doc, updateDoc, deleteDoc, arrayUnion, arrayRemove, query, orderBy, onSnapshot, serverTimestamp, where, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, arrayUnion, arrayRemove, query, orderBy, onSnapshot, serverTimestamp, where, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -723,6 +723,193 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // ==========================================
+    // 13. ПОШУК, ПІДПИСКИ ТА ПРОФІЛЬ ІНШИХ ЛЮДЕЙ
+    // ==========================================
+    const globalSearchInput = document.querySelector('.global-search-input');
+    const globalContentArea = document.querySelector('.global-content-area');
+    
+    // Елементи чужого профілю
+    const otherProfileModal = document.getElementById('other-user-profile-modal');
+    const closeOtherProfileBtn = document.getElementById('close-other-profile-btn');
+    const followBtn = document.getElementById('follow-user-btn');
+    const messageUserBtn = document.getElementById('message-user-btn');
+    
+    let currentViewedUserId = null;
+    let otherProfileUnsubscribe = null;
+
+    // --- 1. АВТОМАТИЧНИЙ ПОШУК ---
+    if (globalSearchInput && globalContentArea) {
+        globalSearchInput.addEventListener('input', async (e) => {
+            const queryText = e.target.value.toLowerCase().trim();
+            
+            if (!queryText) {
+                globalContentArea.innerHTML = '<p style="text-align:center; color: var(--text-secondary); margin-top: 20px;">Введіть ім\'я для пошуку...</p>';
+                return;
+            }
+
+            const usersSnap = await getDocs(collection(db, "users"));
+            globalContentArea.innerHTML = ''; // Очищаємо екран
+            let found = false;
+
+            usersSnap.forEach(docSnap => {
+                const data = docSnap.data();
+                const userId = docSnap.id;
+                const nickname = (data.nickname || "").toLowerCase();
+                
+                // Шукаємо збіг (і не показуємо самого себе)
+                if (nickname.includes(queryText) && userId !== auth.currentUser?.uid) {
+                    found = true;
+                    const avatar = data.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop';
+                    
+                    const card = document.createElement('div');
+                    card.className = 'search-user-card';
+                    card.innerHTML = `
+                        <img src="${avatar}" alt="user">
+                        <div class="search-user-info">
+                            <h4>${data.nickname}</h4>
+                            <p>${data.bio ? data.bio.substring(0, 30) + '...' : 'Новий учасник платформи'}</p>
+                        </div>
+                    `;
+                    // При кліку на картку - відкриваємо профіль!
+                    card.addEventListener('click', () => window.openOtherProfile(userId));
+                    globalContentArea.appendChild(card);
+                }
+            });
+
+            if (!found) {
+                globalContentArea.innerHTML = '<p style="text-align:center; color: var(--text-secondary); margin-top: 20px;">Нікого не знайдено :(</p>';
+            }
+        });
+    }
+
+    // --- 2. ВІДКРИТТЯ ЧУЖОГО ПРОФІЛЮ ---
+    if (closeOtherProfileBtn) {
+        closeOtherProfileBtn.addEventListener('click', () => {
+            otherProfileModal.classList.add('hidden');
+            if(otherProfileUnsubscribe) otherProfileUnsubscribe();
+        });
+    }
+
+    window.openOtherProfile = async (userId) => {
+        currentViewedUserId = userId;
+        otherProfileModal.classList.remove('hidden');
+        document.getElementById('other-profile-grid').innerHTML = '<p style="text-align:center; grid-column:1/-1;">Завантаження...</p>';
+        
+        // Підписуємося на оновлення профілю цієї людини
+        if (otherProfileUnsubscribe) otherProfileUnsubscribe();
+        
+        otherProfileUnsubscribe = onSnapshot(doc(db, "users", userId), (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                document.getElementById('other-profile-avatar').src = data.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop';
+                document.getElementById('other-profile-nickname').textContent = data.nickname || "Користувач";
+                document.getElementById('other-profile-bio').textContent = data.bio || "";
+                
+                const followers = data.followers || [];
+                const following = data.following || [];
+                
+                document.getElementById('other-followers-count').textContent = followers.length;
+                document.getElementById('other-following-count').textContent = following.length;
+
+                // Перевіряємо, чи ми вже підписані на цю людину
+                const myUid = auth.currentUser?.uid;
+                if (myUid && followers.includes(myUid)) {
+                    followBtn.textContent = "Відписатися";
+                    followBtn.style.background = "var(--bg-secondary)";
+                    followBtn.style.color = "var(--text-primary)";
+                } else {
+                    followBtn.textContent = "Підписатися";
+                    followBtn.style.background = "var(--accent-color)";
+                    followBtn.style.color = "white";
+                }
+            }
+        });
+
+        // Завантажуємо пости цієї людини
+        const qPosts = query(collection(db, "posts"), where("authorId", "==", userId), orderBy("createdAt", "desc"));
+        const postsSnap = await getDocs(qPosts);
+        const grid = document.getElementById('other-profile-grid');
+        grid.innerHTML = '';
+        
+        if (postsSnap.empty) {
+             grid.innerHTML = '<p style="text-align:center; grid-column:1/-1; color:#888;">Немає публікацій</p>';
+        } else {
+            postsSnap.forEach(pSnap => {
+                 const post = pSnap.data();
+                 const tile = document.createElement('div');
+                 tile.className = 'profile-post-tile';
+                 if (post.mediaType === 'image' && post.mediaUrl) {
+                     tile.innerHTML = `<img src="${post.mediaUrl}" alt="Post image">`;
+                 } else if (post.mediaType === 'video' && post.mediaUrl) {
+                     tile.innerHTML = `<video src="${post.mediaUrl}" muted></video>`;
+                 } else if (post.text) {
+                     tile.innerHTML = `<div class="text-post-preview"><p>${post.text}</p></div>`;
+                 }
+                 grid.appendChild(tile);
+            });
+        }
+    };
+
+    // --- 3. КНОПКА "ПІДПИСАТИСЯ" ---
+    if (followBtn) {
+        followBtn.addEventListener('click', async () => {
+            const myUid = auth.currentUser?.uid;
+            if (!myUid || !currentViewedUserId) return;
+            
+            const myRef = doc(db, "users", myUid);
+            const targetRef = doc(db, "users", currentViewedUserId);
+
+            followBtn.disabled = true; // Блокуємо від подвійного кліку
+            try {
+                const targetSnap = await getDoc(targetRef);
+                const isFollowing = targetSnap.exists() && (targetSnap.data().followers || []).includes(myUid);
+
+                if (isFollowing) {
+                    // Відписуємося
+                    await setDoc(myRef, { following: arrayRemove(currentViewedUserId) }, { merge: true });
+                    await setDoc(targetRef, { followers: arrayRemove(myUid) }, { merge: true });
+                } else {
+                    // Підписуємося
+                    await setDoc(myRef, { following: arrayUnion(currentViewedUserId) }, { merge: true });
+                    await setDoc(targetRef, { followers: arrayUnion(myUid) }, { merge: true });
+                }
+            } catch(e) {
+                console.error("Помилка підписки:", e);
+            }
+            followBtn.disabled = false;
+        });
+    }
+
+    // --- 4. КНОПКА "НАПИСАТИ" (ВІДКРИВАЄ ЧАТ) ---
+    if (messageUserBtn) {
+        messageUserBtn.addEventListener('click', () => {
+            const nickname = document.getElementById('other-profile-nickname').textContent;
+            const avatar = document.getElementById('other-profile-avatar').src;
+            
+            otherProfileModal.classList.add('hidden'); // Закриваємо профіль
+            if (window.openChatWithUser) {
+                window.openChatWithUser(currentViewedUserId, nickname, avatar);
+            }
+        });
+    }
+
+    // --- 5. ОНОВЛЕННЯ ЛІЧИЛЬНИКІВ У ТВЬОМУ ПРОФІЛІ ---
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            onSnapshot(doc(db, "users", user.uid), (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    const myFollowersCount = document.getElementById('my-followers-count');
+                    const myFollowingCount = document.getElementById('my-following-count');
+                    
+                    if (myFollowersCount) myFollowersCount.textContent = (data.followers || []).length;
+                    if (myFollowingCount) myFollowingCount.textContent = (data.following || []).length;
+                }
+            });
+        }
+    });
 
 
 });
