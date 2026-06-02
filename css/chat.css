@@ -134,14 +134,10 @@
     display: flex;
 }
 
-/* ==========================================
-   НОВИЙ ДИЗАЙН ПРИВАТНОГО ЧАТУ (ЧОРНО-БІЛИЙ)
-   ========================================== */
-
 /* 1. Обмежуємо ширину чату до ширини стрічки постів */
 .chat-wrapper {
     width: 100%;
-    max-width: 600px; /* Центральна колонка, як у публікацій */
+    max-width: 600px;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
@@ -151,84 +147,97 @@
 #chat-messages-container {
     flex: 1;
     overflow-y: auto;
-    padding: 15px;
+    padding: 20px 15px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px; /* Трохи більше повітря між повідомленнями */
 }
 
-/* 2. Кольори повідомлень (Естетика мінімалізму) */
+/* 2. Бульбашки повідомлень (Капсульний дизайн) */
 .chat-message {
-    max-width: 75%;
-    padding: 10px 15px;
-    border-radius: 18px;
-    font-size: 14px;
+    max-width: 78%;
+    padding: 12px 18px;
+    font-size: 15px;
     line-height: 1.4;
     word-wrap: break-word;
     display: flex;
     flex-direction: column;
+    position: relative;
 }
 
-/* Твої повідомлення (Залиті суцільним кольором) */
+/* Мої повідомлення (Високий контраст) */
 .chat-message.sent {
     align-self: flex-end;
-    background-color: var(--text-primary); /* Чорний у світлій темі, білий у темній */
-    color: var(--bg-color); /* Білий у світлій темі, чорний у темній */
-    border-bottom-right-radius: 4px;
+    background-color: var(--text-primary);
+    color: var(--bg-color);
+    /* Дуже круглі кути, крім правого нижнього "хвостика" */
+    border-radius: 24px 24px 6px 24px; 
 }
 
-/* Чужі повідомлення (Прозорі з чіткою рамкою) */
+/* Чужі повідомлення (М'який сірий фон без рамок) */
 .chat-message.received {
     align-self: flex-start;
-    background-color: transparent; 
+    background-color: var(--bg-secondary);
     color: var(--text-primary);
-    border: 1px solid var(--text-primary); /* Рамка в колір тексту */
-    border-bottom-left-radius: 4px;
+    border: none;
+    /* Дуже круглі кути, крім лівого нижнього "хвостика" */
+    border-radius: 24px 24px 24px 6px;
 }
 
-/* 3. Час відправлення (Маленький та акуратний) */
+/* 3. Час відправлення (Непомітний) */
 .chat-message-time {
-    font-size: 9px; /* Мікроскопічний розмір */
+    font-size: 11px;
     margin-top: 4px;
     font-weight: 500;
 }
 
 .chat-message.sent .chat-message-time {
     align-self: flex-end;
-    opacity: 0.7; /* Ледь прозорий на темному фоні */
+    opacity: 0.6;
 }
 
 .chat-message.received .chat-message-time {
     align-self: flex-start;
-    opacity: 0.5; /* Напівпрозорий на світлому фоні */
+    opacity: 0.5;
 }
 
-/* 4. Поле вводу з рамкою */
+/* 4. Поле вводу (Ідеальна капсула) */
 .chat-room-input-area {
-    padding: 15px;
+    padding: 10px 15px;
     display: flex;
-    gap: 10px;
+    gap: 12px;
     align-items: center;
     background-color: var(--bg-color);
     padding-bottom: max(15px, env(safe-area-inset-bottom));
+    border-top: 1px solid var(--border-color); /* Ледь помітна лінія відділення */
 }
 
 .chat-room-input-area input {
     flex: 1;
-    background: transparent; /* Прибираємо старий сірий фон */
-    border: 1px solid var(--border-color); /* Додаємо стильну тонку рамку */
-    border-radius: 25px; /* М'яке заокруглення */
-    padding: 12px 18px;
+    background-color: var(--bg-secondary); /* М'який сірий фон */
+    border: none; /* Жодних рамок! */
+    border-radius: 24px; /* Повна капсула */
+    padding: 14px 20px;
     color: var(--text-primary);
     outline: none;
-    font-size: 14px;
-    transition: border-color 0.2s;
+    font-size: 15px;
 }
 
-.chat-room-input-area input:focus {
-    border-color: var(--text-primary); /* Рамка стає контрастною при введенні тексту */
+/* 5. Кнопка відправлення (Акуратна і контрастна) */
+.chat-room-input-area button {
+    background-color: transparent;
+    color: var(--text-primary); 
+    border: none;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px; /* Трохи більша іконка */
+    cursor: pointer;
+    transition: transform 0.1s;
 }
 
-.chat-room-input-area .icon-btn {
-    color: var(--text-primary); /* Кнопка відправки в колір тексту */
+.chat-room-input-area button:active {
+    transform: scale(0.9); /* Приємна анімація кліку */
 }
