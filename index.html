@@ -6,7 +6,6 @@
     <title>Sensu Space</title>
     
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/navigation.css">
     <link rel="stylesheet" href="css/components.css">
@@ -14,12 +13,6 @@
     <link rel="stylesheet" href="css/global.css">
     <link rel="stylesheet" href="css/profile.css">
     <link rel="stylesheet" href="css/auth.css">
-
-    <style>
-        /* Бронебійні правила для надійності інтерфейсу */
-        #app { position: relative !important; overflow-x: hidden; }
-        .hidden { display: none !important; }
-    </style>
 </head>
 <body>
 
@@ -87,7 +80,7 @@
             </div>
             <div class="global-search-container">
                 <i class="bi bi-search search-icon"></i>
-                <input type="text" placeholder="Пошук людей, гуртків, публікацій..." class="global-search-input">
+                <input type="text" placeholder="Пошук людей..." class="global-search-input">
             </div>
             <div class="interests-scroll">
                 <button class="interest-tag active">Всі</button>
@@ -96,11 +89,6 @@
                 <button class="interest-tag">#музика</button>
                 <button class="interest-tag">#текст</button>
                 <button class="interest-tag add-interest"><i class="bi bi-plus-lg"></i></button>
-            </div>
-            <div class="global-nav">
-                <button class="g-nav-btn active">Стрічка</button>
-                <button class="g-nav-btn">Обмін навичками</button>
-                <button class="g-nav-btn">Гуртки</button>
             </div>
             <div class="global-content-area">
                 <p style="text-align: center; color: var(--text-secondary); margin-top: 20px;">Введіть ім'я для пошуку людей...</p>
@@ -140,6 +128,56 @@
             <div class="profile-grid">
                 </div>
         </section>
+
+        <section id="other-user-profile-modal" class="app-screen">
+            <div class="profile-top-bar">
+                <button id="close-other-profile-btn" class="icon-btn"><i class="bi bi-arrow-left"></i></button>
+                <h3 style="flex: 1; margin: 0; text-align: left; padding-left: 10px;">Профіль</h3>
+            </div>
+            <div class="profile-header">
+                <div class="avatar-wrapper">
+                    <img id="other-profile-avatar" src="" class="profile-main-avatar" style="border: 1px solid var(--border-color);">
+                </div>
+                <div class="profile-info">
+                    <h3 id="other-profile-nickname" class="profile-nickname">...</h3>
+                    <div class="profile-stats">
+                        <div class="stat-item">
+                            <span class="stat-number" id="other-followers-count">0</span>
+                            <span class="stat-label">читачів</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="other-following-count">0</span>
+                            <span class="stat-label">підписок</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <p id="other-profile-bio" class="profile-bio">...</p>
+            <div style="display: flex; gap: 10px; padding: 0 20px; margin-bottom: 20px;">
+                <button id="follow-user-btn" class="text-btn-accent" style="flex: 1; border-radius: 20px; padding: 10px;">Підписатися</button>
+                <button id="message-user-btn" class="action-btn" style="flex: 1; border-radius: 20px; padding: 10px; background: var(--bg-secondary); border: none; color: var(--text-primary);">Написати</button>
+            </div>
+            <div class="profile-tabs">
+                <button class="p-tab-btn active"><i class="bi bi-grid-3x3"></i> Публікації</button>
+            </div>
+            <div id="other-profile-grid" class="profile-grid">
+                </div>
+        </section>
+
+        <section id="chat-room-modal" class="app-screen">
+            <div class="chat-header" style="justify-content: flex-start; gap: 15px;">
+                <button id="close-chat-room-btn" class="icon-btn"><i class="bi bi-arrow-left"></i></button>
+                <img id="chat-room-avatar" src="" style="width: 35px; height: 35px; border-radius: 50%; object-fit: cover;">
+                <h3 id="chat-room-name" style="margin: 0; font-size: 16px;">Ім'я</h3>
+            </div>
+            <div id="chat-messages-container" class="chat-messages-container" style="flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; height: 65vh;">
+                </div>
+            <div class="chat-room-input-area" style="padding: 10px 15px; border-top: 1px solid var(--border-color); display: flex; gap: 10px; align-items: center; background: var(--bg-color);">
+                <input type="text" id="chat-message-input" placeholder="Написати повідомлення..." autocomplete="off" style="flex: 1; border: none; background: var(--bg-secondary); border-radius: 20px; padding: 12px 15px; color: var(--text-primary); outline: none;">
+                <button id="send-message-btn" class="icon-btn" style="color: var(--accent-color);"><i class="bi bi-send-fill"></i></button>
+            </div>
+        </section>
+
 
         <nav class="bottom-nav">
             <button class="nav-btn active" data-screen="screen-home"><i class="bi bi-house-door"></i></button>
@@ -197,57 +235,6 @@
                     <button id="custom-modal-confirm" class="text-btn-accent" style="flex: 1; padding: 10px; justify-content: center; background: var(--accent-color); color: white; border-radius: 12px;">ОК</button>
                 </div>
             </div>
-        </div>
-
-        <div id="chat-room-modal" class="hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 1000;">
-            <div style="display: flex; flex-direction: column; height: 100%;">
-                <div style="padding: 15px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid var(--border-color);">
-                    <button id="close-chat-room-btn" style="background: none; border: none; font-size: 20px; color: var(--text-primary); cursor: pointer;"><i class="bi bi-arrow-left"></i></button>
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <img id="chat-room-avatar" src="" style="width: 35px; height: 35px; border-radius: 50%; object-fit: cover;">
-                        <h3 id="chat-room-name" style="margin: 0; font-size: 16px; color: var(--text-primary);">Ім'я</h3>
-                    </div>
-                </div>
-                <div id="chat-messages-container" style="flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px;">
-                    </div>
-                <div style="padding: 10px 15px; border-top: 1px solid var(--border-color); display: flex; gap: 10px; align-items: center; padding-bottom: max(15px, env(safe-area-inset-bottom));">
-                    <input type="text" id="chat-message-input" placeholder="Написати повідомлення..." autocomplete="off" style="flex: 1; border: none; background: var(--bg-secondary); border-radius: 20px; padding: 12px 15px; color: var(--text-primary); outline: none;">
-                    <button id="send-message-btn" style="background: none; border: none; color: var(--accent-color); font-size: 20px; cursor: pointer;"><i class="bi bi-send-fill"></i></button>
-                </div>
-            </div>
-        </div>
-
-        <div id="other-user-profile-modal" class="hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 1000; overflow-y: auto;">
-            <div style="padding: 15px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid var(--border-color);">
-                <button id="close-other-profile-btn" style="background: none; border: none; font-size: 20px; color: var(--text-primary); cursor: pointer;"><i class="bi bi-arrow-left"></i></button>
-                <h3 style="margin: 0; font-size: 18px; color: var(--text-primary);">Профіль</h3>
-            </div>
-            <div style="margin-top: 20px; padding: 0 20px; display: flex; align-items: center; gap: 20px;">
-                <img id="other-profile-avatar" src="" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-color);">
-                <div style="flex: 1;">
-                    <h3 id="other-profile-nickname" style="margin: 0 0 5px 0; font-size: 18px; color: var(--text-primary);">...</h3>
-                    <div style="display: flex; gap: 20px;">
-                        <div style="display: flex; flex-direction: column; align-items: center;">
-                            <span id="other-followers-count" style="font-weight: 600; font-size: 16px; color: var(--text-primary);">0</span>
-                            <span style="font-size: 12px; color: var(--text-secondary);">читачів</span>
-                        </div>
-                        <div style="display: flex; flex-direction: column; align-items: center;">
-                            <span id="other-following-count" style="font-weight: 600; font-size: 16px; color: var(--text-primary);">0</span>
-                            <span style="font-size: 12px; color: var(--text-secondary);">підписок</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <p id="other-profile-bio" style="padding: 15px 20px; font-size: 14px; color: var(--text-secondary); line-height: 1.4; margin: 0;">...</p>
-            <div style="display: flex; gap: 10px; padding: 0 20px; margin-bottom: 20px;">
-                <button id="follow-user-btn" style="flex: 1; border-radius: 20px; padding: 10px; background: var(--accent-color); color: white; border: none; font-weight: bold; cursor: pointer;">Підписатися</button>
-                <button id="message-user-btn" style="flex: 1; border-radius: 20px; padding: 10px; background: var(--bg-secondary); border: none; color: var(--text-primary); font-weight: bold; cursor: pointer;">Написати</button>
-            </div>
-            <div style="display: flex; justify-content: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px;">
-                <button style="background: none; border: none; color: var(--text-primary); font-weight: 600; border-bottom: 2px solid var(--accent-color); padding: 5px 10px;"><i class="bi bi-grid-3x3"></i> Публікації</button>
-            </div>
-            <div id="other-profile-grid" class="profile-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 0 2px;">
-                </div>
         </div>
 
     </div>

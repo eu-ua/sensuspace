@@ -406,8 +406,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentChatUserId = null;
     let chatUnsubscribe = null; 
 
+    // Закриття чату (повернення на попередню сторінку)
     if (closeChatRoomBtn) closeChatRoomBtn.addEventListener('click', () => {
-        chatRoomModal.classList.add('hidden');
+        document.querySelector('.nav-btn.active')?.click(); // Магія повернення назад
         if (chatUnsubscribe) chatUnsubscribe(); 
     });
 
@@ -422,7 +423,10 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('chat-room-name').textContent = targetUserName || "Користувач";
         document.getElementById('chat-room-avatar').src = targetUserAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop';
         
-        chatRoomModal.classList.remove('hidden');
+        // Відкриваємо екран чату як стандартну вкладку
+        document.querySelectorAll('.app-screen').forEach(s => s.classList.remove('active'));
+        chatRoomModal.classList.add('active');
+        
         chatMessagesContainer.innerHTML = ''; 
 
         if (chatUnsubscribe) chatUnsubscribe(); 
@@ -512,7 +516,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const card = document.createElement('div');
                     card.className = 'search-user-card';
                     card.innerHTML = `<img src="${data.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop'}"><div class="search-user-info"><h4>${data.nickname || 'Користувач'}</h4><p>${data.bio ? data.bio.substring(0,30) : 'На платформі'}</p></div>`;
-                    // ПЕРЕДАЄМО ДАНІ МИТТЄВО
+                    
+                    // Відкриваємо профіль при кліку
                     card.addEventListener('click', () => window.openOtherProfile(docSnap.id, data));
                     globalContentArea.appendChild(card);
                 }
@@ -521,14 +526,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Закриття профілю (повернення назад)
     if (closeOtherProfileBtn) closeOtherProfileBtn.addEventListener('click', () => {
-        otherProfileModal.classList.add('hidden');
+        document.querySelector('.nav-btn.active')?.click(); // Магія повернення назад
         if(otherProfileUnsubscribe) otherProfileUnsubscribe();
     });
 
     window.openOtherProfile = async (userId, initialData = {}) => {
         currentViewedUserId = userId;
-        otherProfileModal.classList.remove('hidden');
+        
+        // Відкриваємо як стандартний екран
+        document.querySelectorAll('.app-screen').forEach(s => s.classList.remove('active'));
+        otherProfileModal.classList.add('active');
         
         // 1. Миттєве заповнення
         const fallbackAvatar = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop';
@@ -573,9 +582,9 @@ document.addEventListener('DOMContentLoaded', () => {
                      const post = pSnap.data();
                      const tile = document.createElement('div');
                      tile.className = 'profile-post-tile';
-                     if (post.mediaType === 'image') tile.innerHTML = `<img src="${post.mediaUrl}" style="width:100%; height:100%; object-fit:cover;">`;
-                     else if (post.mediaType === 'video') tile.innerHTML = `<video src="${post.mediaUrl}" style="width:100%; height:100%; object-fit:cover;" muted></video>`;
-                     else tile.innerHTML = `<div class="text-post-preview" style="padding:10px;"><p style="font-size:12px; margin:0;">${post.text}</p></div>`;
+                     if (post.mediaType === 'image') tile.innerHTML = `<img src="${post.mediaUrl}">`;
+                     else if (post.mediaType === 'video') tile.innerHTML = `<video src="${post.mediaUrl}" muted></video>`;
+                     else tile.innerHTML = `<div class="text-post-preview"><p>${post.text}</p></div>`;
                      grid.appendChild(tile);
                 });
             }
@@ -604,7 +613,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     if (messageUserBtn) messageUserBtn.addEventListener('click', () => {
-        otherProfileModal.classList.add('hidden');
+        // Замість ручного закриття, просто відкриваємо чат поверх
         if (window.openChatWithUser) window.openChatWithUser(currentViewedUserId, document.getElementById('other-profile-nickname').textContent, document.getElementById('other-profile-avatar').src);
     });
 
