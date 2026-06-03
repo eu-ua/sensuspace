@@ -123,11 +123,24 @@
         </section>
 
         <section id="screen-messages" class="app-screen">
-            <div class="chat-header">
-                <h2>Повідомлення</h2>
-                <button class="icon-btn"><i class="bi bi-pencil-square"></i></button>
+            <div style="width: 100%; max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; height: 100%;">
+                
+                <div class="chat-header" style="padding: 15px 0 15px 15px; display: flex; align-items: center; justify-content: space-between;">
+                    <h2 style="font-size: 24px; font-weight: 700; margin: 0;">Повідомлення</h2>
+                </div>
+                
+                <div style="padding: 0 15px 15px 15px;">
+                    <div style="position: relative;">
+                        <i class="bi bi-search" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-secondary);"></i>
+                        <input type="text" id="chat-followers-search" placeholder="Пошук серед підписок..." autocomplete="off" style="width: 100%; padding: 12px 15px 12px 42px; border-radius: 16px; border: none; background: var(--bg-secondary); color: var(--text-primary); outline: none; font-size: 15px;">
+                    </div>
+                </div>
+
+                <div id="chat-followers-results" class="hidden" style="padding: 0 15px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px;"></div>
+                
+                <div id="dynamic-chat-list" class="chat-list" style="padding: 0 15px;"></div>
+
             </div>
-            <div id="dynamic-chat-list" class="chat-list"></div>
         </section>
 
         <section id="screen-global" class="app-screen">

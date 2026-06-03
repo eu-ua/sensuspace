@@ -1,5 +1,5 @@
 import { db, auth } from '../firebase-config.js';
-import { collection, addDoc, doc, updateDoc, deleteDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { collection, addDoc, doc, updateDoc, deleteDoc, query, orderBy, onSnapshot, serverTimestamp, getDoc, setDoc, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
 const DEFAULT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='12' fill='%23e0e0e0'/><path d='M12 14c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4zm0-2c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z' fill='%23999999'/></svg>";
@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentChatUserId = null;
     let chatUnsubscribe = null; 
-    let chatHeaderUnsubscribe = null; // Радар для шапки чату
+    let chatHeaderUnsubscribe = null; 
     let currentChatFile = null; 
     let editingMessageId = null; 
     let replyingToMessage = null; 
@@ -108,7 +108,6 @@ document.addEventListener('DOMContentLoaded', () => {
         chatRoomAvatarEl.classList.add('user-profile-trigger');
         chatRoomAvatarEl.dataset.userId = targetUserId; chatRoomAvatarEl.style.cursor = 'pointer'; 
         
-        // ЖИВИЙ РАДАР ДЛЯ ШАПКИ ЧАТУ
         if (chatHeaderUnsubscribe) chatHeaderUnsubscribe();
         chatHeaderUnsubscribe = onSnapshot(doc(db, "users", targetUserId), (docSnap) => {
             if (docSnap.exists()) {
@@ -267,6 +266,14 @@ document.addEventListener('DOMContentLoaded', () => {
             sendMessageBtn.innerHTML = '<i class="bi bi-hourglass-split"></i>';
             try {
                 await updateDoc(doc(db, "chats", roomId, "messages", editingMessageId), { text: text, editedAt: serverTimestamp() });
+                
+                // Також оновлюємо останнє повідомлення у списку (щоб показало зміни)
+                await setDoc(doc(db, "chats", roomId), {
+                    lastMessage: text,
+                    timestamp: serverTimestamp(),
+                    participants: [currentUser.uid, currentChatUserId]
+                }, { merge: true });
+
                 editingMessageId = null; chatActionPreviewContainer.classList.add('hidden'); chatMessageInput.value = ''; sendMessageBtn.innerHTML = '<i class="bi bi-send-fill"></i>';
             } catch (error) { console.error("Помилка редагування:", error); }
             return;
@@ -291,6 +298,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             await addDoc(collection(db, "chats", roomId, "messages"), msgPayload);
 
+            // ОНОВЛЕННЯ 1: Створюємо/Оновлюємо запис про чат для списку чатів
+            await setDoc(doc(db, "chats", roomId), {
+                participants: [currentUser.uid, currentChatUserId],
+                lastMessage: text || (mediaType === 'image' ? "📷 Фото" : "🎥 Відео"),
+                timestamp: serverTimestamp()
+            }, { merge: true });
+
             currentChatFile = null;
             if (chatMediaInput) chatMediaInput.value = '';
             if (chatMediaPreviewContainer) chatMediaPreviewContainer.classList.add('hidden');
@@ -311,24 +325,147 @@ document.addEventListener('DOMContentLoaded', () => {
     if (sendMessageBtn) sendMessageBtn.addEventListener('click', sendMessage);
     if (chatMessageInput) chatMessageInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
 
+
+    // ==========================================
+    // ОНОВЛЕННЯ 2: ПОШУК СЕРЕД ПІДПИСОК (Щоб почати чат)
+    // ==========================================
+    const followersSearchInput = document.getElementById('chat-followers-search');
+    const followersResults = document.getElementById('chat-followers-results');
+
+    if (followersSearchInput && followersResults) {
+        followersSearchInput.addEventListener('input', async (e) => {
+            const qText = e.target.value.toLowerCase().trim();
+            followersResults.innerHTML = '';
+            
+            if (!qText) {
+                followersResults.classList.add('hidden');
+                return;
+            }
+            
+            followersResults.classList.remove('hidden');
+            
+            try {
+                const currentUser = auth.currentUser;
+                if (!currentUser) return;
+                
+                const myDoc = await getDoc(doc(db, "users", currentUser.uid));
+                const following = myDoc.data()?.following || [];
+                
+                if (following.length === 0) {
+                    followersResults.innerHTML = '<p style="text-align:center; color: var(--text-secondary); font-size: 13px;">Ви ще ні на кого не підписані</p>';
+                    return;
+                }
+
+                const usersSnap = await getDocs(collection(db, "users"));
+                let found = false;
+                
+                usersSnap.forEach(snap => {
+                    const u = snap.data();
+                    const uId = snap.id;
+                    
+                    if (following.includes(uId)) {
+                        const name = (u.nickname || u.username || u.login || "Користувач").toLowerCase();
+                        if (name.includes(qText)) {
+                            found = true;
+                            const avatar = u.avatarUrl || DEFAULT_AVATAR;
+                            const displayName = u.nickname || u.username || u.login || "Користувач";
+                            
+                            const div = document.createElement('div');
+                            div.className = 'chat-item';
+                            div.style.border = '1px dashed var(--accent-color)';
+                            div.innerHTML = `
+                                <img src="${avatar}" class="chat-avatar" alt="Avatar">
+                                <div class="chat-info">
+                                    <h4 class="chat-name">${displayName}</h4>
+                                    <p class="chat-last-message" style="color: var(--accent-color); font-weight: 500;">Почати діалог</p>
+                                </div>
+                            `;
+                            div.addEventListener('click', () => {
+                                followersSearchInput.value = '';
+                                followersResults.classList.add('hidden');
+                                window.openChatWithUser(uId, displayName, avatar);
+                            });
+                            followersResults.appendChild(div);
+                        }
+                    }
+                });
+                
+                if (!found) followersResults.innerHTML = '<p style="text-align:center; color: var(--text-secondary); font-size: 13px;">Нікого не знайдено</p>';
+                
+            } catch(error) { console.error(error); }
+        });
+    }
+
+    // ==========================================
+    // ОНОВЛЕННЯ 3: ДИНАМІЧНИЙ СПИСОК ЧАТІВ
+    // ==========================================
     const dynamicChatList = document.getElementById('dynamic-chat-list');
+    const localUserCache = {}; // Кеш для швидкого завантаження аватарів
+
     if (dynamicChatList) {
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                onSnapshot(query(collection(db, "users")), (snapshot) => {
+                // ОНОВЛЕННЯ: Тепер ми слухаємо НЕ всіх користувачів, а тільки створені чати!
+                const qChats = query(collection(db, "chats"), where("participants", "array-contains", user.uid));
+                
+                onSnapshot(qChats, async (snapshot) => {
                     dynamicChatList.innerHTML = ''; 
-                    if (snapshot.empty) { dynamicChatList.innerHTML = '<p style="text-align:center; padding: 20px; color: var(--text-secondary);">Порожньо</p>'; return; }
-                    snapshot.forEach((docSnap) => {
-                        const data = docSnap.data();
-                        if (docSnap.id === user.uid) return;
+                    
+                    if (snapshot.empty) { 
+                        dynamicChatList.innerHTML = '<div style="text-align:center; padding: 40px 20px;"><i class="bi bi-chat-dots" style="font-size: 40px; color: var(--text-secondary); opacity: 0.5;"></i><p style="color: var(--text-secondary); margin-top: 15px; font-size: 15px;">Тут з\'являться ваші діалоги.<br>Знайдіть когось у пошуку вище, щоб написати.</p></div>'; 
+                        return; 
+                    }
+                    
+                    // Завантажуємо і сортуємо по даті останнього повідомлення
+                    let chatsArray = [];
+                    snapshot.forEach(docSnap => chatsArray.push({ id: docSnap.id, ...docSnap.data() }));
+                    chatsArray.sort((a, b) => (b.timestamp?.toMillis() || 0) - (a.timestamp?.toMillis() || 0));
+                    
+                    for (const chatData of chatsArray) {
+                        if (!chatData.participants) continue;
+                        const otherUserId = chatData.participants.find(id => id !== user.uid);
+                        if (!otherUserId) continue;
+
+                        // Блискавично отримуємо ім'я (з кешу або бази)
+                        if (!localUserCache[otherUserId]) {
+                            const otherUserSnap = await getDoc(doc(db, "users", otherUserId));
+                            localUserCache[otherUserId] = otherUserSnap.exists() ? otherUserSnap.data() : { nickname: "Видалений акаунт" };
+                        }
+                        
+                        const uData = localUserCache[otherUserId];
+                        const avatar = uData.avatarUrl || DEFAULT_AVATAR;
+                        const name = uData.nickname || u.username || u.login || "Користувач";
+                        const lastMsg = chatData.lastMessage || '...';
+                        
                         const chatItem = document.createElement('div');
                         chatItem.className = 'chat-item';
-                        const avatar = data.avatarUrl || DEFAULT_AVATAR;
-                        const name = data.nickname || data.username || data.login || "...";
-                        chatItem.innerHTML = `<img src="${avatar}" class="chat-avatar" alt="Avatar"><div class="chat-info"><h4 class="chat-name">${name}</h4><p class="chat-last-message">Натисніть, щоб написати...</p></div>`;
-                        chatItem.addEventListener('click', () => { window.openChatWithUser(docSnap.id, name, avatar); });
+                        chatItem.style.position = 'relative'; // Для позиціонування кошика
+                        
+                        // ОНОВЛЕННЯ 4: Вивід останнього повідомлення та кнопка видалення
+                        chatItem.innerHTML = `
+                            <img src="${avatar}" class="chat-avatar" alt="Avatar">
+                            <div class="chat-info" style="flex: 1; min-width: 0; padding-right: 30px;">
+                                <h4 class="chat-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name}</h4>
+                                <p class="chat-last-message" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${lastMsg}</p>
+                            </div>
+                            <button class="delete-chat-btn" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #ff4444; font-size: 18px; cursor: pointer; opacity: 0.7; padding: 10px; z-index: 10;"><i class="bi bi-trash"></i></button>
+                        `;
+                        
+                        chatItem.addEventListener('click', async (e) => {
+                            // Якщо натиснули на червоний кошик - видаляємо чат
+                            if (e.target.closest('.delete-chat-btn')) {
+                                const confirmDelete = await window.showCustomModal({ title: "Видалення", message: "Ви впевнені, що хочете видалити цей чат зі списку?", type: "confirm" });
+                                if (confirmDelete) {
+                                    await deleteDoc(doc(db, "chats", chatData.id));
+                                }
+                                return;
+                            }
+                            // Інакше - просто відкриваємо чат
+                            window.openChatWithUser(otherUserId, name, avatar);
+                        });
+                        
                         dynamicChatList.appendChild(chatItem);
-                    });
+                    }
                 });
             }
         });
