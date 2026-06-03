@@ -6,44 +6,81 @@
     <title>Sensu Space</title>
     
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/navigation.css">
     <link rel="stylesheet" href="css/components.css">
-    <link rel="stylesheet" href="css/chat.css?v=2">
+    <link rel="stylesheet" href="css/chat.css">
     <link rel="stylesheet" href="css/global.css">
     <link rel="stylesheet" href="css/profile.css">
     <link rel="stylesheet" href="css/auth.css">
 
-    <!-- ВБУДОВАНІ СТИЛІ (Чат та Список чатів) -->
     <style>
+        /* БРОНЕБІЙНЕ ПРИХОВУВАННЯ ПУСТИХ ПЛАШОК ТА МЕНЮ */
+        #chat-action-preview-container.hidden,
+        #chat-media-preview-container.hidden,
+        #chat-search-bar.hidden,
+        .reaction-picker.hidden {
+            display: none !important;
+        }
+
         /* ДИЗАЙН ПОВІДОМЛЕНЬ (THREADS STYLE) */
         .chat-wrapper { width: 100%; max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; height: 100%; }
         #chat-messages-container { flex: 1; overflow-y: auto; padding: 20px 15px; display: flex; flex-direction: column; gap: 12px; }
         .chat-message { max-width: 78%; padding: 12px 18px; font-size: 15px; line-height: 1.4; word-wrap: break-word; display: flex; flex-direction: column; position: relative; }
         
-        /* Бронебійні кольори для бульбашок (!important пробиває кеш) */
-        .chat-message.sent { align-self: flex-end; background-color: var(--text-primary, #000) !important; color: var(--bg-color, #fff) !important; border-radius: 24px 24px 6px 24px; }
-        .chat-message.received { align-self: flex-start; background-color: var(--bg-secondary, #f0f0f0) !important; color: var(--text-primary, #000) !important; border: none; border-radius: 24px 24px 24px 6px; }
+        /* ================================================= */
+        /* ІДЕАЛЬНІ КОЛЬОРИ ДЛЯ ТЕМНОЇ ТЕМИ (За замовчуванням) */
+        /* ================================================= */
+        /* Мої повідомлення (Спокійні, темно-сірі) */
+        .chat-message.sent { align-self: flex-end; background-color: #2D2D2D !important; color: #E0E0E0 !important; border-radius: 24px 24px 6px 24px; }
+        /* Чужі повідомлення (Контрастні, світло-сірі) */
+        .chat-message.received { align-self: flex-start; background-color: #E0E0E0 !important; color: #121212 !important; border: none; border-radius: 24px 24px 24px 6px; }
         
+        /* ================================================= */
+        /* ІДЕАЛЬНІ КОЛЬОРИ ДЛЯ СВІТЛОЇ ТЕМИ                 */
+        /* ================================================= */
+        /* Мої повідомлення (Спокійні, світло-сірі) */
+        [data-theme="light"] .chat-message.sent { background-color: #EAEAEA !important; color: #1A1A1A !important; }
+        /* Чужі повідомлення (Контрастні, чорні) */
+        [data-theme="light"] .chat-message.received { background-color: #1A1A1A !important; color: #F8F9FA !important; }
+        
+        /* Дрібний текст (Час відправлення) */
         .chat-message-time { font-size: 11px; margin-top: 4px; font-weight: 500; }
         .chat-message.sent .chat-message-time { align-self: flex-end; opacity: 0.6; }
         .chat-message.received .chat-message-time { align-self: flex-start; opacity: 0.5; }
         
-        /* ПОЛЕ ВВОДУ */
-        .chat-room-input-area { padding: 10px 15px; display: flex; gap: 12px; align-items: center; background-color: var(--bg-color, #fff); padding-bottom: max(15px, env(safe-area-inset-bottom)); border-top: 1px solid var(--border-color, #eaeaea); }
-        .chat-room-input-area input { flex: 1; background-color: var(--bg-secondary, #f0f0f0); border: 1px solid transparent; border-radius: 24px; padding: 14px 20px; color: var(--text-primary, #000); outline: none; font-size: 15px; }
-        .chat-room-input-area input:focus { border: 1px solid var(--border-color, #ccc); }
-        .chat-room-input-area button { background: transparent; color: var(--text-primary, #000); border: none; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 22px; cursor: pointer; transition: transform 0.1s; }
+        /* ПОЛЕ ВВОДУ (Темна тема) */
+        .chat-room-input-area { padding: 10px 15px; display: flex; gap: 12px; align-items: center; background-color: var(--bg-color); padding-bottom: max(15px, env(safe-area-inset-bottom)); border-top: 1px solid #2D2D2D; }
+        .chat-room-input-area input { flex: 1; background-color: #1E1E1E; border: 1px solid transparent; border-radius: 24px; padding: 14px 20px; color: var(--text-color); outline: none; font-size: 15px; }
+        .chat-room-input-area input:focus { border: 1px solid #555; }
+        .chat-room-input-area button { background: transparent; color: var(--text-color); border: none; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 22px; cursor: pointer; transition: transform 0.1s; }
         .chat-room-input-area button:active { transform: scale(0.9); }
 
-        /* СПИСОК ЧАТІВ (Вкладка "Повідомлення") */
+        /* ПОЛЕ ВВОДУ (Світла тема) */
+        [data-theme="light"] .chat-room-input-area { border-top: 1px solid #EAEAEA; }
+        [data-theme="light"] .chat-room-input-area input { background-color: #F0F0F0; color: #1A1A1A; }
+        [data-theme="light"] .chat-room-input-area input:focus { border: 1px solid #CCC; }
+
+        /* СПИСОК ЧАТІВ (Темна тема) */
         .chat-list { display: flex; flex-direction: column; padding: 15px; }
-        .chat-item { display: flex; align-items: center; gap: 15px; padding: 12px 15px; background: var(--bg-secondary, #f0f0f0) !important; border-radius: 16px; margin-bottom: 10px; cursor: pointer; transition: background 0.2s; }
-        .chat-item:hover { background: var(--border-color, #e0e0e0) !important; }
+        .chat-item { display: flex; align-items: center; gap: 15px; padding: 12px 15px; background: #1E1E1E !important; border-radius: 16px; margin-bottom: 10px; cursor: pointer; transition: background 0.2s; }
+        .chat-item:hover { background: #2D2D2D !important; }
         .chat-avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; }
         .chat-info { flex: 1; display: flex; flex-direction: column; justify-content: center; }
-        .chat-name { font-weight: 600; font-size: 16px; color: var(--text-primary, #000); margin: 0; }
-        .chat-last-message { font-size: 13px; color: var(--text-secondary, #888); margin: 0; margin-top: 4px; }
+        .chat-name { font-weight: 600; font-size: 16px; color: var(--text-color); margin: 0; }
+        .chat-last-message { font-size: 13px; color: #888; margin: 0; margin-top: 4px; }
+        
+        /* СПИСОК ЧАТІВ (Світла тема) */
+        [data-theme="light"] .chat-item { background: #F8F9FA !important; border: 1px solid #EAEAEA; }
+        [data-theme="light"] .chat-item:hover { background: #EAEAEA !important; }
+
+        /* ПЛАШКИ ТА ПОШУК */
+        #chat-action-preview-container, #chat-media-preview-container, #chat-search-bar { background-color: #1E1E1E; border-color: #2D2D2D; }
+        #chat-inner-search-input { background-color: #121212 !important; color: var(--text-color) !important; border-color: #333 !important; }
+        
+        [data-theme="light"] #chat-action-preview-container, [data-theme="light"] #chat-media-preview-container, [data-theme="light"] #chat-search-bar { background-color: #F8F9FA; border-color: #EAEAEA; }
+        [data-theme="light"] #chat-inner-search-input { background-color: #FFFFFF !important; border-color: #DDD !important; color: #1A1A1A !important; }
     </style>
 </head>
 <body>
@@ -53,24 +90,14 @@
         <div id="auth-modal" class="auth-modal-overlay hidden">
             <div class="auth-container">
                 <button id="close-auth-btn" class="close-modal-btn"><i class="bi bi-x-lg"></i></button>
-                <div class="auth-header-brand">
-                    <h2>Sensu</h2>
-                    <p>Простір для творців</p>
-                </div>
+                <div class="auth-header-brand"><h2>Sensu</h2><p>Простір для творців</p></div>
                 <div class="auth-tabs">
                     <button class="auth-tab-btn active" id="tab-login">Вхід</button>
                     <button class="auth-tab-btn" id="tab-register">Реєстрація</button>
                 </div>
                 <form id="auth-form" class="auth-form">
-                    <div class="input-group">
-                        <i class="bi bi-person input-icon-left"></i>
-                        <input type="text" id="auth-username" placeholder="Твій логін (без пробілів)" required autocomplete="off">
-                    </div>
-                    <div class="input-group">
-                        <i class="bi bi-lock input-icon-left"></i>
-                        <input type="password" id="auth-password" placeholder="Пароль (мінімум 6 символів)" required>
-                        <i class="bi bi-eye input-icon-right" id="toggle-password-btn"></i>
-                    </div>
+                    <div class="input-group"><i class="bi bi-person input-icon-left"></i><input type="text" id="auth-username" placeholder="Твій логін" required autocomplete="off"></div>
+                    <div class="input-group"><i class="bi bi-lock input-icon-left"></i><input type="password" id="auth-password" placeholder="Пароль" required><i class="bi bi-eye input-icon-right" id="toggle-password-btn"></i></div>
                     <div id="auth-error-message" class="auth-error hidden"></div>
                     <button type="submit" class="auth-submit-btn" id="auth-submit-btn">Увійти</button>
                 </form>
@@ -92,8 +119,7 @@
                     <button class="toggle-btn">Найпопулярніше</button>
                 </div>
             </div>
-            <div class="feed-container">
-                </div>
+            <div class="feed-container"></div>
         </section>
 
         <section id="screen-messages" class="app-screen">
@@ -101,8 +127,7 @@
                 <h2>Повідомлення</h2>
                 <button class="icon-btn"><i class="bi bi-pencil-square"></i></button>
             </div>
-            <div id="dynamic-chat-list" class="chat-list">
-                </div>
+            <div id="dynamic-chat-list" class="chat-list"></div>
         </section>
 
         <section id="screen-global" class="app-screen">
@@ -112,19 +137,18 @@
             </div>
             <div class="global-search-container">
                 <i class="bi bi-search search-icon"></i>
-                <input type="text" placeholder="Пошук людей..." class="global-search-input">
+                <input type="text" placeholder="Пошук людей, гуртків, публікацій..." class="global-search-input">
             </div>
             <div class="interests-scroll">
                 <button class="interest-tag active">Всі</button>
                 <button class="interest-tag">#дизайн</button>
-                <button class="interest-tag">#код</button>
-                <button class="interest-tag">#музика</button>
-                <button class="interest-tag">#текст</button>
                 <button class="interest-tag add-interest"><i class="bi bi-plus-lg"></i></button>
             </div>
-            <div class="global-content-area">
-                <p style="text-align: center; color: var(--text-secondary); margin-top: 20px;">Введіть ім'я для пошуку людей...</p>
+            <div class="global-nav">
+                <button class="g-nav-btn active">Стрічка</button>
+                <button class="g-nav-btn">Обмін навичками</button>
             </div>
+            <div class="global-content-area"></div>
         </section>
 
         <section id="screen-profile" class="app-screen">
@@ -134,98 +158,21 @@
             </div>
             <div class="profile-header">
                 <div class="avatar-wrapper cursor-pointer">
-                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop" alt="My Avatar" class="profile-main-avatar">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop" class="profile-main-avatar">
                     <div class="edit-badge"><i class="bi bi-pencil-fill"></i></div>
                 </div>
                 <div class="profile-info">
                     <h3 class="profile-nickname cursor-pointer">Користувач <i class="bi bi-pencil edit-icon"></i></h3>
                     <div class="profile-stats">
-                        <div class="stat-item cursor-pointer" id="my-followers-btn">
-                            <span class="stat-number" id="my-followers-count">0</span>
-                            <span class="stat-label">читачів</span>
-                        </div>
-                        <div class="stat-item cursor-pointer" id="my-following-btn">
-                            <span class="stat-number" id="my-following-count">0</span>
-                            <span class="stat-label">підписок</span>
-                        </div>
+                        <div class="stat-item cursor-pointer" id="my-followers-btn"><span class="stat-number" id="my-followers-count">0</span><span class="stat-label">читачів</span></div>
+                        <div class="stat-item cursor-pointer" id="my-following-btn"><span class="stat-number" id="my-following-count">0</span><span class="stat-label">підписок</span></div>
                     </div>
                 </div>
             </div>
-            <p class="profile-bio cursor-pointer">
-                Натисніть сюди, щоб додати опис профілю. <i class="bi bi-pencil edit-icon"></i>
-            </p>
-            <div class="profile-tabs">
-                <button class="p-tab-btn active"><i class="bi bi-grid-3x3"></i> Публікації</button>
-            </div>
-            <div class="profile-grid">
-                </div>
+            <p class="profile-bio cursor-pointer">Додайте опис профілю <i class="bi bi-pencil edit-icon"></i></p>
+            <div class="profile-tabs"><button class="p-tab-btn active"><i class="bi bi-grid-3x3"></i> Публікації</button></div>
+            <div class="profile-grid"></div>
         </section>
-
-        <section id="other-user-profile-modal" class="app-screen">
-            <div class="profile-top-bar">
-                <button id="close-other-profile-btn" class="icon-btn"><i class="bi bi-arrow-left"></i></button>
-                <h3 style="flex: 1; margin: 0; text-align: left; padding-left: 10px;">Профіль</h3>
-            </div>
-            <div class="profile-header">
-                <div class="avatar-wrapper">
-                    <img id="other-profile-avatar" src="" class="profile-main-avatar" style="border: 1px solid var(--border-color);">
-                </div>
-                <div class="profile-info">
-                    <h3 id="other-profile-nickname" class="profile-nickname">...</h3>
-                    <div class="profile-stats">
-                        <div class="stat-item">
-                            <span class="stat-number" id="other-followers-count">0</span>
-                            <span class="stat-label">читачів</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-number" id="other-following-count">0</span>
-                            <span class="stat-label">підписок</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <p id="other-profile-bio" class="profile-bio">...</p>
-            <div style="display: flex; gap: 10px; padding: 0 20px; margin-bottom: 20px;">
-                <button id="follow-user-btn" class="text-btn-accent" style="flex: 1; border-radius: 20px; padding: 10px;">Підписатися</button>
-                <button id="message-user-btn" class="action-btn" style="flex: 1; border-radius: 20px; padding: 10px; background: var(--bg-secondary); border: none; color: var(--text-primary);">Написати</button>
-            </div>
-            <div class="profile-tabs">
-                <button class="p-tab-btn active"><i class="bi bi-grid-3x3"></i> Публікації</button>
-            </div>
-            <div id="other-profile-grid" class="profile-grid">
-                </div>
-        </section>
-
-
-        <section id="chat-room-modal" class="app-screen hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: var(--bg-color); z-index: 2000;">
-            <div class="chat-wrapper" style="display: flex; flex-direction: column; height: 100%; max-width: 600px; margin: 0 auto; background: var(--bg-color);">
-                
-                <div class="chat-header" style="flex-shrink: 0; padding: 15px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); background: var(--bg-color); z-index: 10;">
-                    <div style="display: flex; align-items: center; gap: 15px;">
-                        <button id="close-chat-room-btn" class="icon-btn"><i class="bi bi-arrow-left"></i></button>
-                        <img id="chat-room-avatar" src="" style="width: 35px; height: 35px; border-radius: 50%; object-fit: cover;">
-                        <h3 id="chat-room-name" style="margin: 0; font-size: 16px;">Ім'я</h3>
-                    </div>
-                    <button id="chat-search-btn" class="icon-btn" style="color: var(--text-primary);"><i class="bi bi-search"></i></button>
-                </div>
-
-                <div id="chat-search-bar" class="hidden" style="padding: 10px 15px; background: var(--bg-secondary); border-bottom: 1px solid var(--border-color);">
-                    <input type="text" id="chat-inner-search-input" placeholder="Пошук повідомлень..." autocomplete="off" style="width: 100%; padding: 10px 15px; border-radius: 20px; border: none; background: var(--bg-color); color: var(--text-primary); outline: none; font-size: 14px;">
-                </div>
-
-                <div id="chat-messages-container" style="flex-grow: 1; overflow-y: auto; padding: 20px 15px; display: flex; flex-direction: column; gap: 12px; background: var(--bg-color);">
-                    </div>
-
-                <div class="chat-room-input-area" style="flex-shrink: 0; padding: 10px 15px; display: flex; gap: 10px; align-items: center; border-top: 1px solid var(--border-color); background: var(--bg-color); padding-bottom: max(15px, env(safe-area-inset-bottom));">
-                    <button id="chat-attach-btn" class="icon-btn" style="font-size: 22px; color: var(--text-secondary); background: none; border: none; cursor: pointer; padding: 0 5px;"><i class="bi bi-paperclip"></i></button>
-                    <input type="file" id="chat-media-input" accept="image/*,video/*" hidden>
-                    
-                    <input type="text" id="chat-message-input" placeholder="Написати..." autocomplete="off" style="flex: 1; background-color: var(--bg-secondary); border: none; border-radius: 24px; padding: 14px 20px; color: var(--text-primary); outline: none; font-size: 15px;">
-                    <button id="send-message-btn" style="background: transparent; color: var(--text-primary); border: none; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 22px; cursor: pointer; transition: 0.2s;"><i class="bi bi-send-fill"></i></button>
-                </div>
-            </div>
-        </section>
-
 
         <nav class="bottom-nav">
             <button class="nav-btn active" data-screen="screen-home"><i class="bi bi-house-door"></i></button>
@@ -235,20 +182,25 @@
         </nav>
 
         <div id="settings-modal" class="popup-modal hidden">
-            <div class="popup-content">
+            <div class="popup-content" style="position: relative;">
+                <button id="close-settings-btn" class="icon-btn" style="position: absolute; top: 15px; right: 15px; color: #888; font-size: 20px;"><i class="bi bi-x-lg"></i></button>
+                
                 <h3 class="sheet-title">Налаштування</h3>
                 <div class="settings-list">
                     <button class="setting-item" id="theme-toggle-btn">
                         <div class="setting-item-left"><i class="bi bi-moon-stars"></i><span>Темна тема</span></div>
                         <div class="toggle-switch active" id="theme-switch"></div>
                     </button>
-                    <button class="setting-item text-danger">
+                    
+                    <hr style="border: none; border-top: 1px solid var(--border-color); margin: 10px 0;">
+                    
+                    <button class="setting-item" id="logout-btn" style="color: #ff4444; font-weight: 600;">
                         <div class="setting-item-left"><i class="bi bi-box-arrow-right"></i><span>Вийти з акаунта</span></div>
                     </button>
                 </div>
             </div>
         </div>
-
+        
         <div id="create-post-modal" class="popup-modal hidden">
             <div class="popup-content">
                 <div class="create-post-header">
@@ -260,7 +212,7 @@
                     <textarea id="post-text-input" placeholder="Що вас надихає зараз?" rows="5"></textarea>
                     <div id="media-preview-container" class="hidden">
                         <button id="remove-media-btn" class="remove-media-icon"><i class="bi bi-x-circle-fill"></i></button>
-                        <img id="image-preview" class="hidden" src="" alt="Preview">
+                        <img id="image-preview" class="hidden" src="">
                         <video id="video-preview" class="hidden" controls></video>
                     </div>
                 </div>
@@ -284,6 +236,80 @@
                 </div>
             </div>
         </div>
+
+        <section id="chat-room-modal" class="app-screen hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: var(--bg-color); z-index: 2000;">
+            <div class="chat-wrapper" style="display: flex; flex-direction: column; height: 100%; max-width: 600px; margin: 0 auto; background: var(--bg-color);">
+                
+                <div class="chat-header" style="flex-shrink: 0; padding: 15px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); background: var(--bg-color); z-index: 10;">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <button id="close-chat-room-btn" class="icon-btn"><i class="bi bi-arrow-left"></i></button>
+                        <img id="chat-room-avatar" src="" style="width: 35px; height: 35px; border-radius: 50%; object-fit: cover;">
+                        <h3 id="chat-room-name" style="margin: 0; font-size: 16px;">Ім'я</h3>
+                    </div>
+                    <button id="chat-search-btn" class="icon-btn" style="color: var(--text-primary);"><i class="bi bi-search"></i></button>
+                </div>
+
+                <div id="chat-search-bar" class="hidden" style="padding: 10px 15px; background: var(--bg-color);">
+                    <input type="text" id="chat-inner-search-input" placeholder="Пошук повідомлень..." autocomplete="off" style="width: 100%; padding: 10px 18px; border-radius: 20px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); outline: none; font-size: 14px;">
+                </div>
+
+                <div id="chat-messages-container" style="flex-grow: 1; overflow-y: auto; padding: 20px 15px; display: flex; flex-direction: column; gap: 16px; background: var(--bg-color);">
+                    </div>
+
+                <div id="chat-action-preview-container" class="hidden" style="margin: 0 15px 10px 15px; padding: 10px 15px; border-radius: 16px; background: var(--bg-secondary); display: flex; align-items: center; justify-content: space-between; font-size: 13px; border: 1px solid var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                    <div style="display: flex; flex-direction: column; overflow: hidden; border-left: 3px solid var(--accent-color); padding-left: 10px;">
+                        <span id="chat-action-title" style="font-weight: 600; color: var(--text-primary); margin-bottom: 2px;">Дія</span>
+                        <span id="chat-action-text" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; color: var(--text-secondary);">...</span>
+                    </div>
+                    <button id="chat-cancel-action-btn" style="background: none; border: none; color: #888; cursor: pointer; font-size: 20px;"><i class="bi bi-x-circle-fill"></i></button>
+                </div>
+
+                <div id="chat-media-preview-container" class="hidden" style="margin: 0 15px 10px 15px; padding: 10px 15px; border-radius: 16px; background: var(--bg-secondary); display: flex; align-items: center; justify-content: space-between; border: 1px solid var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                    <div style="display: flex; align-items: center; gap: 10px; overflow: hidden;">
+                        <div style="width: 36px; height: 36px; border-radius: 8px; background: var(--bg-color); display: flex; justify-content: center; align-items: center;">
+                            <i class="bi bi-image" style="color: var(--accent-color); font-size: 18px;"></i>
+                        </div>
+                        <div style="display: flex; flex-direction: column;">
+                            <span style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Прикріплено медіа</span>
+                            <span id="chat-media-name" style="font-size: 11px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">Файл</span>
+                        </div>
+                    </div>
+                    <button id="chat-remove-media-btn" style="background: none; border: none; color: #888; cursor: pointer; font-size: 20px;"><i class="bi bi-x-circle-fill"></i></button>
+                </div>
+
+                <div class="chat-room-input-area" style="flex-shrink: 0; padding: 10px 15px; display: flex; gap: 10px; align-items: center; border-top: 1px solid var(--border-color); background: var(--bg-color); padding-bottom: max(15px, env(safe-area-inset-bottom));">
+                    <button id="chat-attach-btn" class="icon-btn" style="font-size: 22px; color: var(--text-secondary); background: none; border: none; cursor: pointer; padding: 0 5px;"><i class="bi bi-paperclip"></i></button>
+                    <input type="file" id="chat-media-input" accept="image/*,video/*" hidden>
+                    
+                    <input type="text" id="chat-message-input" placeholder="Написати..." autocomplete="off" style="flex: 1; background-color: var(--bg-secondary); border: none; border-radius: 24px; padding: 14px 20px; color: var(--text-primary); outline: none; font-size: 15px;">
+                    <button id="send-message-btn" style="background: transparent; color: var(--text-primary); border: none; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 22px; cursor: pointer; transition: 0.2s;"><i class="bi bi-send-fill"></i></button>
+                </div>
+            </div>
+        </section>
+
+        <section id="other-user-profile-modal" class="app-screen hidden">
+            <div class="profile-top-bar" style="padding: 15px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid var(--border-color);">
+                <button id="close-other-profile-btn" class="icon-btn"><i class="bi bi-arrow-left"></i></button>
+                <h3 style="margin: 0; font-size: 18px;">Профіль</h3>
+            </div>
+            <div class="profile-header" style="margin-top: 15px;">
+                <div class="avatar-wrapper"><img id="other-profile-avatar" src="" class="profile-main-avatar"></div>
+                <div class="profile-info">
+                    <h3 id="other-profile-nickname" class="profile-nickname">...</h3>
+                    <div class="profile-stats">
+                        <div class="stat-item"><span class="stat-number" id="other-followers-count">0</span><span class="stat-label">читачів</span></div>
+                        <div class="stat-item"><span class="stat-number" id="other-following-count">0</span><span class="stat-label">підписок</span></div>
+                    </div>
+                </div>
+            </div>
+            <p id="other-profile-bio" class="profile-bio">...</p>
+            <div style="display: flex; gap: 10px; padding: 0 20px; margin-bottom: 20px;">
+                <button id="follow-user-btn" class="text-btn-accent" style="flex: 1; border-radius: 20px; padding: 10px;">Підписатися</button>
+                <button id="message-user-btn" class="action-btn" style="flex: 1; border-radius: 20px; padding: 10px; background: var(--bg-secondary); border: none; color: var(--text-primary);">Написати</button>
+            </div>
+            <div class="profile-tabs"><button class="p-tab-btn active"><i class="bi bi-grid-3x3"></i> Публікації</button></div>
+            <div id="other-profile-grid" class="profile-grid"></div>
+        </section>
 
     </div>
 
