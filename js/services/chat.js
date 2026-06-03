@@ -249,8 +249,45 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    // ==========================================
+    // ОНОВЛЕННЯ: ОБРОБНИК КЛІКІВ ДЛЯ ЗАКРИТТЯ МЕНЮ
+    // ==========================================
+    const openChatListSearchBtn = document.getElementById('open-chat-search-btn');
+    const chatSearchListContainer = document.getElementById('chat-search-container');
+    const followersSearchInput = document.getElementById('chat-followers-search');
+    const followersResults = document.getElementById('chat-followers-results');
+
+    if (openChatListSearchBtn) {
+        openChatListSearchBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Щоб клік не передавався далі на document
+            chatSearchListContainer.classList.toggle('hidden');
+            if (!chatSearchListContainer.classList.contains('hidden')) {
+                followersSearchInput.focus();
+            } else {
+                followersSearchInput.value = '';
+                followersResults.classList.add('hidden');
+                followersResults.innerHTML = '';
+            }
+        });
+    }
+
     document.addEventListener('click', (e) => {
-        if (!e.target.closest('.reaction-picker') && !e.target.closest('.react-btn')) document.querySelectorAll('.reaction-picker').forEach(p => p.classList.add('hidden'));
+        // 1. Закриваємо емодзі-меню, якщо клік повз
+        if (!e.target.closest('.reaction-picker') && !e.target.closest('.react-btn')) {
+            document.querySelectorAll('.reaction-picker').forEach(p => p.classList.add('hidden'));
+        }
+
+        // 2. Закриваємо поле пошуку по підписках, якщо клік повз поле І повз кнопку лупи
+        if (chatSearchListContainer && !chatSearchListContainer.classList.contains('hidden')) {
+            if (!chatSearchListContainer.contains(e.target) && !openChatListSearchBtn.contains(e.target)) {
+                chatSearchListContainer.classList.add('hidden');
+                followersSearchInput.value = '';
+                if (followersResults) {
+                    followersResults.classList.add('hidden');
+                    followersResults.innerHTML = '';
+                }
+            }
+        }
     });
 
     async function sendMessage() {
@@ -267,7 +304,6 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 await updateDoc(doc(db, "chats", roomId, "messages", editingMessageId), { text: text, editedAt: serverTimestamp() });
                 
-                // Також оновлюємо останнє повідомлення у списку (щоб показало зміни)
                 await setDoc(doc(db, "chats", roomId), {
                     lastMessage: text,
                     timestamp: serverTimestamp(),
@@ -298,7 +334,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             await addDoc(collection(db, "chats", roomId, "messages"), msgPayload);
 
-            // ОНОВЛЕННЯ 1: Створюємо/Оновлюємо запис про чат для списку чатів
             await setDoc(doc(db, "chats", roomId), {
                 participants: [currentUser.uid, currentChatUserId],
                 lastMessage: text || (mediaType === 'image' ? "📷 Фото" : "🎥 Відео"),
@@ -327,11 +362,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // ==========================================
-    // ОНОВЛЕННЯ 2: ПОШУК СЕРЕД ПІДПИСОК (Щоб почати чат)
+    // ПОШУК СЕРЕД ПІДПИСОК (Щоб почати чат)
     // ==========================================
-    const followersSearchInput = document.getElementById('chat-followers-search');
-    const followersResults = document.getElementById('chat-followers-results');
-
     if (followersSearchInput && followersResults) {
         followersSearchInput.addEventListener('input', async (e) => {
             const qText = e.target.value.toLowerCase().trim();
@@ -383,6 +415,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             div.addEventListener('click', () => {
                                 followersSearchInput.value = '';
                                 followersResults.classList.add('hidden');
+                                chatSearchListContainer.classList.add('hidden'); // Ховаємо пошук після кліку
                                 window.openChatWithUser(uId, displayName, avatar);
                             });
                             followersResults.appendChild(div);
@@ -397,26 +430,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // ОНОВЛЕННЯ 3: ДИНАМІЧНИЙ СПИСОК ЧАТІВ
+    // ДИНАМІЧНИЙ СПИСОК ЧАТІВ
     // ==========================================
     const dynamicChatList = document.getElementById('dynamic-chat-list');
-    const localUserCache = {}; // Кеш для швидкого завантаження аватарів
+    const localUserCache = {}; 
 
     if (dynamicChatList) {
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                // ОНОВЛЕННЯ: Тепер ми слухаємо НЕ всіх користувачів, а тільки створені чати!
                 const qChats = query(collection(db, "chats"), where("participants", "array-contains", user.uid));
                 
                 onSnapshot(qChats, async (snapshot) => {
                     dynamicChatList.innerHTML = ''; 
                     
                     if (snapshot.empty) { 
-                        dynamicChatList.innerHTML = '<div style="text-align:center; padding: 40px 20px;"><i class="bi bi-chat-dots" style="font-size: 40px; color: var(--text-secondary); opacity: 0.5;"></i><p style="color: var(--text-secondary); margin-top: 15px; font-size: 15px;">Тут з\'являться ваші діалоги.<br>Знайдіть когось у пошуку вище, щоб написати.</p></div>'; 
+                        dynamicChatList.innerHTML = '<div style="text-align:center; padding: 40px 20px;"><i class="bi bi-chat-dots" style="font-size: 40px; color: var(--text-secondary); opacity: 0.5;"></i><p style="color: var(--text-secondary); margin-top: 15px; font-size: 15px;">Тут з\'являться ваші діалоги.<br>Натисніть на лупу, щоб знайти друзів.</p></div>'; 
                         return; 
                     }
                     
-                    // Завантажуємо і сортуємо по даті останнього повідомлення
                     let chatsArray = [];
                     snapshot.forEach(docSnap => chatsArray.push({ id: docSnap.id, ...docSnap.data() }));
                     chatsArray.sort((a, b) => (b.timestamp?.toMillis() || 0) - (a.timestamp?.toMillis() || 0));
@@ -426,7 +457,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         const otherUserId = chatData.participants.find(id => id !== user.uid);
                         if (!otherUserId) continue;
 
-                        // Блискавично отримуємо ім'я (з кешу або бази)
                         if (!localUserCache[otherUserId]) {
                             const otherUserSnap = await getDoc(doc(db, "users", otherUserId));
                             localUserCache[otherUserId] = otherUserSnap.exists() ? otherUserSnap.data() : { nickname: "Видалений акаунт" };
@@ -439,9 +469,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         
                         const chatItem = document.createElement('div');
                         chatItem.className = 'chat-item';
-                        chatItem.style.position = 'relative'; // Для позиціонування кошика
+                        chatItem.style.position = 'relative'; 
                         
-                        // ОНОВЛЕННЯ 4: Вивід останнього повідомлення та кнопка видалення
                         chatItem.innerHTML = `
                             <img src="${avatar}" class="chat-avatar" alt="Avatar">
                             <div class="chat-info" style="flex: 1; min-width: 0; padding-right: 30px;">
@@ -452,15 +481,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         `;
                         
                         chatItem.addEventListener('click', async (e) => {
-                            // Якщо натиснули на червоний кошик - видаляємо чат
                             if (e.target.closest('.delete-chat-btn')) {
                                 const confirmDelete = await window.showCustomModal({ title: "Видалення", message: "Ви впевнені, що хочете видалити цей чат зі списку?", type: "confirm" });
-                                if (confirmDelete) {
-                                    await deleteDoc(doc(db, "chats", chatData.id));
-                                }
+                                if (confirmDelete) await deleteDoc(doc(db, "chats", chatData.id));
                                 return;
                             }
-                            // Інакше - просто відкриваємо чат
                             window.openChatWithUser(otherUserId, name, avatar);
                         });
                         
