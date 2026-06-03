@@ -1,5 +1,5 @@
 import { db, auth } from '../firebase-config.js';
-import { collection, getDocs, doc, setDoc, getDoc, arrayUnion, arrayRemove, query, orderBy, onSnapshot, where } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { collection, doc, setDoc, getDoc, arrayUnion, arrayRemove, query, orderBy, onSnapshot, where } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const DEFAULT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='12' fill='%23e0e0e0'/><path d='M12 14c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4zm0-2c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z' fill='%23999999'/></svg>";
 
@@ -13,41 +13,66 @@ document.addEventListener('DOMContentLoaded', () => {
     const messageUserBtn = document.getElementById('message-user-btn');
     
     let currentViewedUserId = null;
+    
+    // Змінні для вимкнення радарів, коли ми закриваємо профіль
     let otherProfileUnsubscribe = null;
+    let otherProfilePostsUnsubscribe = null;
+
+    // МАГІЯ 1: Живий кеш усіх користувачів для пошуку
+    let allUsers = [];
+    let currentSearchQuery = "";
+
+    // Радар слухає базу 24/7. Якщо хтось змінив фото чи ім'я — масив миттєво оновлюється
+    onSnapshot(collection(db, "users"), (snapshot) => {
+        allUsers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // Якщо людина прямо зараз щось шукає, миттєво перемальовуємо результати!
+        if (currentSearchQuery) {
+            renderSearchResults();
+        }
+    });
 
     if (globalSearchInput && globalContentArea) {
-        globalSearchInput.addEventListener('input', async (e) => {
-            const queryText = e.target.value.toLowerCase().trim();
-            if (!queryText) { globalContentArea.innerHTML = '<p style="text-align:center; color: var(--text-secondary); margin-top: 20px;">Введіть ім\'я для пошуку...</p>'; return; }
-            
-            const usersSnap = await getDocs(collection(db, "users"));
-            globalContentArea.innerHTML = ''; 
-            let found = false;
-            
-            usersSnap.forEach(docSnap => {
-                const data = docSnap.data();
-                const userId = docSnap.id;
-                const searchName = (data.nickname || data.username || data.login || "").toLowerCase();
-                
-                if (searchName.includes(queryText) && userId !== auth.currentUser?.uid) {
-                    found = true;
-                    const avatar = data.avatarUrl || DEFAULT_AVATAR;
-                    const card = document.createElement('div');
-                    card.className = 'search-user-card';
-                    const displayName = data.nickname || data.username || data.login || '...';
-                    card.innerHTML = `<img src="${avatar}" alt="user"><div class="search-user-info"><h4>${displayName}</h4><p>${data.bio ? data.bio.substring(0, 30) + '...' : 'Новий учасник платформи'}</p></div>`;
-                    card.addEventListener('click', () => window.openOtherProfile(userId, { nickname: displayName, avatarUrl: avatar }));
-                    globalContentArea.appendChild(card);
-                }
-            });
-            if (!found) globalContentArea.innerHTML = '<p style="text-align:center; color: var(--text-secondary); margin-top: 20px;">Нікого не знайдено :(</p>';
+        globalSearchInput.addEventListener('input', (e) => {
+            currentSearchQuery = e.target.value.toLowerCase().trim();
+            renderSearchResults();
         });
+    }
+
+    function renderSearchResults() {
+        if (!currentSearchQuery) { 
+            globalContentArea.innerHTML = '<p style="text-align:center; color: var(--text-secondary); margin-top: 20px;">Введіть ім\'я для пошуку...</p>'; 
+            return; 
+        }
+        
+        globalContentArea.innerHTML = ''; 
+        let found = false;
+        
+        allUsers.forEach(data => {
+            const searchName = (data.nickname || data.username || data.login || "").toLowerCase();
+            
+            if (searchName.includes(currentSearchQuery) && data.id !== auth.currentUser?.uid) {
+                found = true;
+                const avatar = data.avatarUrl || DEFAULT_AVATAR;
+                const card = document.createElement('div');
+                card.className = 'search-user-card';
+                const displayName = data.nickname || data.username || data.login || '...';
+                
+                card.innerHTML = `<img src="${avatar}" alt="user"><div class="search-user-info"><h4>${displayName}</h4><p>${data.bio ? data.bio.substring(0, 30) + '...' : 'Новий учасник платформи'}</p></div>`;
+                card.addEventListener('click', () => window.openOtherProfile(data.id, { nickname: displayName, avatarUrl: avatar }));
+                
+                globalContentArea.appendChild(card);
+            }
+        });
+        
+        if (!found) globalContentArea.innerHTML = '<p style="text-align:center; color: var(--text-secondary); margin-top: 20px;">Нікого не знайдено :(</p>';
     }
 
     if (closeOtherProfileBtn) {
         closeOtherProfileBtn.addEventListener('click', () => {
             document.querySelector('.nav-btn.active')?.click();
+            // Вимикаємо радари, коли профіль закритий, щоб економити пам'ять
             if(otherProfileUnsubscribe) otherProfileUnsubscribe();
+            if(otherProfilePostsUnsubscribe) otherProfilePostsUnsubscribe();
         });
     }
 
@@ -57,6 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
         otherProfileModal.classList.add('active');
         otherProfileModal.classList.remove('hidden');
 
+        // Миттєво підставляємо те, що вже знаємо з пошуку
         document.getElementById('other-profile-avatar').src = initialData.avatarUrl || DEFAULT_AVATAR;
         document.getElementById('other-profile-nickname').textContent = initialData.nickname || "...";
         document.getElementById('other-profile-bio').textContent = initialData.bio || "...";
@@ -66,6 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const grid = document.getElementById('other-profile-grid');
         grid.innerHTML = '<p style="text-align:center; grid-column:1/-1;">Завантаження...</p>';
         
+        // МАГІЯ 2: Живий радар для даних чужого профілю (Підписки/Аватар)
         if (otherProfileUnsubscribe) otherProfileUnsubscribe();
         otherProfileUnsubscribe = onSnapshot(doc(db, "users", userId), (docSnap) => {
             if (docSnap.exists()) {
@@ -88,12 +115,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        try {
-            const postsSnap = await getDocs(query(collection(db, "posts"), where("authorId", "==", userId), orderBy("createdAt", "desc")));
+        // МАГІЯ 3: Живий радар для ПУБЛІКАЦІЙ чужого профілю!
+        if (otherProfilePostsUnsubscribe) otherProfilePostsUnsubscribe();
+        otherProfilePostsUnsubscribe = onSnapshot(query(collection(db, "posts"), where("authorId", "==", userId), orderBy("createdAt", "desc")), (snapshot) => {
             grid.innerHTML = '';
-            if (postsSnap.empty) grid.innerHTML = '<p style="text-align:center; grid-column:1/-1; color:#888;">Немає публікацій</p>';
+            if (snapshot.empty) grid.innerHTML = '<p style="text-align:center; grid-column:1/-1; color:#888;">Немає публікацій</p>';
             else {
-                postsSnap.forEach(pSnap => {
+                snapshot.forEach(pSnap => {
                      const post = pSnap.data();
                      const tile = document.createElement('div');
                      tile.className = 'profile-post-tile';
@@ -103,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
                      grid.appendChild(tile);
                 });
             }
-        } catch (error) { console.error(error); }
+        });
     };
 
     if (followBtn) {
@@ -114,6 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const targetRef = doc(db, "users", currentViewedUserId);
             followBtn.disabled = true; 
             try {
+                // Тут getDoc нормальний, бо ми лише 1 раз перевіряємо статус перед дією
                 const targetSnap = await getDoc(targetRef);
                 const isFollowing = targetSnap.exists() && (targetSnap.data().followers || []).includes(myUid);
                 if (isFollowing) {

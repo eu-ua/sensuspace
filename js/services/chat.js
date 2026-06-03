@@ -1,5 +1,5 @@
 import { db, auth } from '../firebase-config.js';
-import { collection, addDoc, doc, updateDoc, deleteDoc, query, orderBy, onSnapshot, serverTimestamp, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { collection, addDoc, doc, updateDoc, deleteDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
 const DEFAULT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='12' fill='%23e0e0e0'/><path d='M12 14c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4zm0-2c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z' fill='%23999999'/></svg>";
@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentChatUserId = null;
     let chatUnsubscribe = null; 
+    let chatHeaderUnsubscribe = null; // Радар для шапки чату
     let currentChatFile = null; 
     let editingMessageId = null; 
     let replyingToMessage = null; 
@@ -36,6 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (closeChatRoomBtn) closeChatRoomBtn.addEventListener('click', () => {
         document.querySelector('.nav-btn.active')?.click(); 
         if (chatUnsubscribe) chatUnsubscribe(); 
+        if (chatHeaderUnsubscribe) chatHeaderUnsubscribe();
     });
 
     if (chatCancelActionBtn) {
@@ -106,13 +108,15 @@ document.addEventListener('DOMContentLoaded', () => {
         chatRoomAvatarEl.classList.add('user-profile-trigger');
         chatRoomAvatarEl.dataset.userId = targetUserId; chatRoomAvatarEl.style.cursor = 'pointer'; 
         
-        getDoc(doc(db, "users", targetUserId)).then(docSnap => {
+        // ЖИВИЙ РАДАР ДЛЯ ШАПКИ ЧАТУ
+        if (chatHeaderUnsubscribe) chatHeaderUnsubscribe();
+        chatHeaderUnsubscribe = onSnapshot(doc(db, "users", targetUserId), (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 chatRoomNameEl.textContent = data.nickname || data.username || data.login || targetUserName || "...";
                 chatRoomAvatarEl.src = data.avatarUrl || DEFAULT_AVATAR;
             }
-        }).catch(e => console.error(e));
+        });
 
         if (chatSearchBar) chatSearchBar.classList.add('hidden');
         if (chatInnerSearchInput) chatInnerSearchInput.value = '';

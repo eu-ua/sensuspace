@@ -1,7 +1,10 @@
 import { db, auth } from '../firebase-config.js';
-import { collection, addDoc, doc, updateDoc, deleteDoc, arrayUnion, arrayRemove, query, orderBy, onSnapshot, serverTimestamp, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { collection, addDoc, doc, updateDoc, deleteDoc, arrayUnion, arrayRemove, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const DEFAULT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='12' fill='%23e0e0e0'/><path d='M12 14c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4zm0-2c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z' fill='%23999999'/></svg>";
+
+// МАГІЯ: Розумний кеш для миттєвого оновлення
+const userCache = {}; 
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -114,17 +117,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 const likesCount = likedBy.length;
                 const isLikedByMe = user ? likedBy.includes(user.uid) : false;
 
+                // Використовуємо кеш для миттєвого рендеру без блимання
+                const currentName = userCache[post.authorId]?.name || "...";
+                const currentAvatar = userCache[post.authorId]?.avatar || DEFAULT_AVATAR;
+
                 const postElement = document.createElement('div');
                 postElement.classList.add('post-card');
                 
-                // Рендеримо пусту заглушку, яка за секунду заповниться АКТУАЛЬНИМ аватаром
                 postElement.innerHTML = `
                     <div class="post-header">
-                        <div class="avatar-wrapper user-profile-trigger" data-user-id="${post.authorId}" style="width: 40px; height: 40px; overflow: hidden; border-radius: 50%; cursor: pointer;">
-                            <img id="feed-avatar-${postId}" src="${DEFAULT_AVATAR}" style="width: 100%; height: 100%; object-fit: cover;" alt="Avatar">
+                        <div class="avatar-wrapper user-profile-trigger" data-user-id="${post.authorId}" data-user-name="${currentName}" data-user-avatar="${currentAvatar}" style="width: 40px; height: 40px; overflow: hidden; border-radius: 50%; cursor: pointer;">
+                            <img id="feed-avatar-${postId}" src="${currentAvatar}" style="width: 100%; height: 100%; object-fit: cover;" alt="Avatar">
                         </div>
                         <div class="post-user-info">
-                            <span id="feed-name-${postId}" class="post-username user-profile-trigger" data-user-id="${post.authorId}" style="cursor: pointer;">...</span>
+                            <span id="feed-name-${postId}" class="post-username user-profile-trigger" data-user-id="${post.authorId}" data-user-name="${currentName}" data-user-avatar="${currentAvatar}" style="cursor: pointer;">${currentName}</span>
                             <span class="post-time">${timeString}</span>
                         </div>
                         ${isAuthor ? `<button class="post-menu-btn delete-post-btn"><i class="bi bi-trash" style="color: #ff4444;"></i></button>` : `<button class="post-menu-btn"><i class="bi bi-three-dots"></i></button>`}
@@ -135,7 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <i class="bi ${isLikedByMe ? 'bi-heart-fill' : 'bi-heart'}" style="${isLikedByMe ? 'color: #ff4444;' : ''}"></i> 
                             <span class="likes-count">${likesCount}</span>
                         </button>
-                        <button class="action-btn dm-btn" data-author-id="${post.authorId}"><i class="bi bi-send"></i></button>
+                        <button class="action-btn dm-btn" data-author-id="${post.authorId}" data-author-name="${currentName}"><i class="bi bi-send"></i></button>
                     </div>
                 `;
                 
@@ -147,30 +153,42 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 feedContainer.appendChild(postElement);
 
-                // ОНОВЛЕННЯ: Динамічно тягнемо ім'я та фото автора з глобальної бази
-                getDoc(doc(db, "users", post.authorId)).then(docSnap => {
-                    if (docSnap.exists()) {
-                        const data = docSnap.data();
-                        const displayName = data.nickname || data.username || data.login || (data.email ? data.email.split('@')[0] : "Користувач");
-                        const avatar = data.avatarUrl || DEFAULT_AVATAR;
-                        
-                        const avatarImg = document.getElementById(`feed-avatar-${postId}`);
-                        const nameSpan = document.getElementById(`feed-name-${postId}`);
-                        
-                        if (avatarImg) {
-                            avatarImg.src = avatar;
-                            avatarImg.parentElement.dataset.userAvatar = avatar;
-                            avatarImg.parentElement.dataset.userName = displayName;
+                // ЖИВИЙ РАДАР: Якщо ми ще не слухаємо цього автора - починаємо слухати!
+                if (!userCache[post.authorId]) {
+                    userCache[post.authorId] = { name: "...", avatar: DEFAULT_AVATAR, isListening: true }; // Ставимо заглушку, щоб не плодити радари
+                    
+                    onSnapshot(doc(db, "users", post.authorId), (docSnap) => {
+                        if (docSnap.exists()) {
+                            const data = docSnap.data();
+                            const displayName = data.nickname || data.username || data.login || (data.email ? data.email.split('@')[0] : "Користувач");
+                            const avatar = data.avatarUrl || DEFAULT_AVATAR;
+                            
+                            // Оновлюємо глобальний кеш
+                            userCache[post.authorId] = { name: displayName, avatar: avatar, isListening: true };
+                            
+                            // МИТТЄВО змінюємо аватарки в усіх постах цього автора
+                            document.querySelectorAll(`.user-profile-trigger[data-user-id="${post.authorId}"] img`).forEach(img => {
+                                if (img.id && img.id.startsWith('feed-avatar-')) {
+                                    img.src = avatar;
+                                    img.parentElement.dataset.userAvatar = avatar;
+                                    img.parentElement.dataset.userName = displayName;
+                                }
+                            });
+                            
+                            // МИТТЄВО змінюємо імена
+                            document.querySelectorAll(`.post-username[data-user-id="${post.authorId}"]`).forEach(span => {
+                                span.textContent = displayName;
+                                span.dataset.userName = displayName;
+                                span.dataset.userAvatar = avatar;
+                            });
+                            
+                            // Оновлюємо ім'я для кнопки чату
+                            document.querySelectorAll(`.dm-btn[data-author-id="${post.authorId}"]`).forEach(btn => {
+                                btn.dataset.authorName = displayName;
+                            });
                         }
-                        if (nameSpan) {
-                            nameSpan.textContent = displayName;
-                            nameSpan.dataset.userName = displayName;
-                        }
-                        
-                        const dmBtn = postElement.querySelector('.dm-btn');
-                        if (dmBtn) dmBtn.dataset.authorName = displayName;
-                    }
-                });
+                    });
+                }
             });
         });
     }
