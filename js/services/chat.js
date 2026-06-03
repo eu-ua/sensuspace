@@ -48,13 +48,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // ==========================================
+    // 1. ВІДКРИТТЯ ПОШУКУ ВСЕРЕДИНІ ЧАТУ
+    // ==========================================
     if (chatSearchBtn) {
-        chatSearchBtn.addEventListener('click', () => {
+        chatSearchBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Зупиняємо клік
             chatSearchBar.classList.toggle('hidden');
             if (!chatSearchBar.classList.contains('hidden')) chatInnerSearchInput.focus();
-            else { chatInnerSearchInput.value = ''; document.querySelectorAll('.chat-message').forEach(msg => msg.style.display = 'flex'); }
+            else { 
+                chatInnerSearchInput.value = ''; 
+                document.querySelectorAll('.chat-message').forEach(msg => msg.style.display = 'flex'); 
+            }
         });
     }
+
     if (chatInnerSearchInput) {
         chatInnerSearchInput.addEventListener('input', (e) => {
             const q = e.target.value.toLowerCase().trim();
@@ -250,18 +258,18 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // ==========================================
-    // ОНОВЛЕННЯ: ОБРОБНИК КЛІКІВ ДЛЯ ЗАКРИТТЯ МЕНЮ
+    // 2. ВІДКРИТТЯ ПОШУКУ ПО ПІДПИСКАХ (ЛУПА)
     // ==========================================
     const openChatListSearchBtn = document.getElementById('open-chat-search-btn');
-    const chatSearchListContainer = document.getElementById('chat-search-container');
+    const chatSearchContainer = document.getElementById('chat-search-container');
     const followersSearchInput = document.getElementById('chat-followers-search');
     const followersResults = document.getElementById('chat-followers-results');
 
     if (openChatListSearchBtn) {
         openChatListSearchBtn.addEventListener('click', (e) => {
-            e.stopPropagation(); // Щоб клік не передавався далі на document
-            chatSearchListContainer.classList.toggle('hidden');
-            if (!chatSearchListContainer.classList.contains('hidden')) {
+            e.stopPropagation(); // Зупиняємо клік, щоб глобальний обробник його не зловив
+            chatSearchContainer.classList.toggle('hidden');
+            if (!chatSearchContainer.classList.contains('hidden')) {
                 followersSearchInput.focus();
             } else {
                 followersSearchInput.value = '';
@@ -271,16 +279,20 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // ==========================================
+    // 3. ГЛОБАЛЬНИЙ ОБРОБНИК (ЗНИКАННЯ ПРИ КЛІКУ ПОВЗ)
+    // ==========================================
     document.addEventListener('click', (e) => {
-        // 1. Закриваємо емодзі-меню, якщо клік повз
+        // Закриваємо емодзі-меню
         if (!e.target.closest('.reaction-picker') && !e.target.closest('.react-btn')) {
             document.querySelectorAll('.reaction-picker').forEach(p => p.classList.add('hidden'));
         }
 
-        // 2. Закриваємо поле пошуку по підписках, якщо клік повз поле І повз кнопку лупи
-        if (chatSearchListContainer && !chatSearchListContainer.classList.contains('hidden')) {
-            if (!chatSearchListContainer.contains(e.target) && !openChatListSearchBtn.contains(e.target)) {
-                chatSearchListContainer.classList.add('hidden');
+        // Закриваємо пошук у списку чатів
+        if (chatSearchContainer && !chatSearchContainer.classList.contains('hidden')) {
+            // Якщо клікнули НЕ по пошуку, НЕ по результатах і НЕ по лупі
+            if (!chatSearchContainer.contains(e.target) && (!openChatListSearchBtn || !openChatListSearchBtn.contains(e.target)) && (!followersResults || !followersResults.contains(e.target))) {
+                chatSearchContainer.classList.add('hidden');
                 followersSearchInput.value = '';
                 if (followersResults) {
                     followersResults.classList.add('hidden');
@@ -288,8 +300,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
+
+        // Закриваємо пошук ВСЕРЕДИНІ чату
+        if (chatSearchBar && !chatSearchBar.classList.contains('hidden')) {
+            if (!chatSearchBar.contains(e.target) && (!chatSearchBtn || !chatSearchBtn.contains(e.target))) {
+                chatSearchBar.classList.add('hidden');
+                if (chatInnerSearchInput) chatInnerSearchInput.value = '';
+                document.querySelectorAll('.chat-message').forEach(msg => msg.style.display = 'flex');
+            }
+        }
     });
 
+    // ==========================================
+    // ВІДПРАВКА ПОВІДОМЛЕННЯ
+    // ==========================================
     async function sendMessage() {
         const text = chatMessageInput.value.trim();
         const currentUser = auth.currentUser;
@@ -362,7 +386,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // ==========================================
-    // ПОШУК СЕРЕД ПІДПИСОК (Щоб почати чат)
+    // ЛОГІКА ПОШУКУ ПО ПІДПИСКАХ
     // ==========================================
     if (followersSearchInput && followersResults) {
         followersSearchInput.addEventListener('input', async (e) => {
@@ -415,7 +439,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             div.addEventListener('click', () => {
                                 followersSearchInput.value = '';
                                 followersResults.classList.add('hidden');
-                                chatSearchListContainer.classList.add('hidden'); // Ховаємо пошук після кліку
+                                if (chatSearchContainer) chatSearchContainer.classList.add('hidden'); // Ховаємо пошук після кліку
                                 window.openChatWithUser(uId, displayName, avatar);
                             });
                             followersResults.appendChild(div);
@@ -464,7 +488,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         
                         const uData = localUserCache[otherUserId];
                         const avatar = uData.avatarUrl || DEFAULT_AVATAR;
-                        const name = uData.nickname || u.username || u.login || "Користувач";
+                        const name = uData.nickname || uData.username || uData.login || "Користувач";
                         const lastMsg = chatData.lastMessage || '...';
                         
                         const chatItem = document.createElement('div');
