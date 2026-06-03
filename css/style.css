@@ -1,3 +1,4 @@
+
 #app {
     position: relative; 
     /* твої інші стилі (max-width, margin тощо) залишаються без змін */
@@ -40,6 +41,10 @@ body {
         padding-bottom: 0; /* Прибираємо відступ знизу */
         padding-left: 80px; /* Додаємо відступ зліва для бокового меню */
     }
+}
+
+.hidden {
+    display: none !important;
 }
 
 /* --- ЕКРАНИ --- */
