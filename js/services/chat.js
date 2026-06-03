@@ -2,6 +2,8 @@ import { db, auth } from '../firebase-config.js';
 import { collection, addDoc, doc, updateDoc, deleteDoc, query, orderBy, onSnapshot, serverTimestamp, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
+const DEFAULT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='12' fill='%23e0e0e0'/><path d='M12 14c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4zm0-2c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z' fill='%23999999'/></svg>";
+
 document.addEventListener('DOMContentLoaded', () => {
 
     const chatRoomModal = document.getElementById('chat-room-modal');
@@ -96,19 +98,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const chatRoomNameEl = document.getElementById('chat-room-name');
         const chatRoomAvatarEl = document.getElementById('chat-room-avatar');
         
-        chatRoomNameEl.textContent = targetUserName || "Користувач";
+        chatRoomNameEl.textContent = targetUserName || "...";
         chatRoomNameEl.classList.add('user-profile-trigger');
         chatRoomNameEl.dataset.userId = targetUserId; chatRoomNameEl.style.cursor = 'pointer'; 
 
-        chatRoomAvatarEl.src = targetUserAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop';
+        chatRoomAvatarEl.src = targetUserAvatar || DEFAULT_AVATAR;
         chatRoomAvatarEl.classList.add('user-profile-trigger');
         chatRoomAvatarEl.dataset.userId = targetUserId; chatRoomAvatarEl.style.cursor = 'pointer'; 
         
         getDoc(doc(db, "users", targetUserId)).then(docSnap => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
-                chatRoomNameEl.textContent = data.nickname || data.username || data.login || targetUserName || "Користувач";
-                if (data.avatarUrl) chatRoomAvatarEl.src = data.avatarUrl;
+                chatRoomNameEl.textContent = data.nickname || data.username || data.login || targetUserName || "...";
+                chatRoomAvatarEl.src = data.avatarUrl || DEFAULT_AVATAR;
             }
         }).catch(e => console.error(e));
 
@@ -305,21 +307,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (sendMessageBtn) sendMessageBtn.addEventListener('click', sendMessage);
     if (chatMessageInput) chatMessageInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
 
-    // СПИСОК ЧАТІВ
     const dynamicChatList = document.getElementById('dynamic-chat-list');
     if (dynamicChatList) {
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 onSnapshot(query(collection(db, "users")), (snapshot) => {
                     dynamicChatList.innerHTML = ''; 
-                    if (snapshot.empty) { dynamicChatList.innerHTML = '<p style="text-align:center; padding: 20px;">Порожньо</p>'; return; }
+                    if (snapshot.empty) { dynamicChatList.innerHTML = '<p style="text-align:center; padding: 20px; color: var(--text-secondary);">Порожньо</p>'; return; }
                     snapshot.forEach((docSnap) => {
                         const data = docSnap.data();
                         if (docSnap.id === user.uid) return;
                         const chatItem = document.createElement('div');
                         chatItem.className = 'chat-item';
-                        const avatar = data.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop';
-                        const name = data.nickname || data.username || data.login || (data.email ? data.email.split('@')[0] : null) || "Користувач";
+                        const avatar = data.avatarUrl || DEFAULT_AVATAR;
+                        const name = data.nickname || data.username || data.login || "...";
                         chatItem.innerHTML = `<img src="${avatar}" class="chat-avatar" alt="Avatar"><div class="chat-info"><h4 class="chat-name">${name}</h4><p class="chat-last-message">Натисніть, щоб написати...</p></div>`;
                         chatItem.addEventListener('click', () => { window.openChatWithUser(docSnap.id, name, avatar); });
                         dynamicChatList.appendChild(chatItem);

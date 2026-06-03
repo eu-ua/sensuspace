@@ -1,6 +1,8 @@
 import { db, auth } from '../firebase-config.js';
 import { collection, getDocs, doc, setDoc, getDoc, arrayUnion, arrayRemove, query, orderBy, onSnapshot, where } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
+const DEFAULT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='12' fill='%23e0e0e0'/><path d='M12 14c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4zm0-2c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z' fill='%23999999'/></svg>";
+
 document.addEventListener('DOMContentLoaded', () => {
 
     const globalSearchInput = document.querySelector('.global-search-input');
@@ -29,10 +31,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 if (searchName.includes(queryText) && userId !== auth.currentUser?.uid) {
                     found = true;
-                    const avatar = data.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop';
+                    const avatar = data.avatarUrl || DEFAULT_AVATAR;
                     const card = document.createElement('div');
                     card.className = 'search-user-card';
-                    const displayName = data.nickname || data.username || data.login || (data.email ? data.email.split('@')[0] : null) || 'Користувач';
+                    const displayName = data.nickname || data.username || data.login || '...';
                     card.innerHTML = `<img src="${avatar}" alt="user"><div class="search-user-info"><h4>${displayName}</h4><p>${data.bio ? data.bio.substring(0, 30) + '...' : 'Новий учасник платформи'}</p></div>`;
                     card.addEventListener('click', () => window.openOtherProfile(userId, { nickname: displayName, avatarUrl: avatar }));
                     globalContentArea.appendChild(card);
@@ -55,10 +57,9 @@ document.addEventListener('DOMContentLoaded', () => {
         otherProfileModal.classList.add('active');
         otherProfileModal.classList.remove('hidden');
 
-        const fallbackAvatar = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop';
-        document.getElementById('other-profile-avatar').src = initialData.avatarUrl || fallbackAvatar;
-        document.getElementById('other-profile-nickname').textContent = initialData.nickname || "Користувач";
-        document.getElementById('other-profile-bio').textContent = initialData.bio || "";
+        document.getElementById('other-profile-avatar').src = initialData.avatarUrl || DEFAULT_AVATAR;
+        document.getElementById('other-profile-nickname').textContent = initialData.nickname || "...";
+        document.getElementById('other-profile-bio').textContent = initialData.bio || "...";
         document.getElementById('other-followers-count').textContent = (initialData.followers || []).length;
         document.getElementById('other-following-count').textContent = (initialData.following || []).length;
         
@@ -69,9 +70,9 @@ document.addEventListener('DOMContentLoaded', () => {
         otherProfileUnsubscribe = onSnapshot(doc(db, "users", userId), (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
-                document.getElementById('other-profile-avatar').src = data.avatarUrl || fallbackAvatar;
-                document.getElementById('other-profile-nickname').textContent = data.nickname || data.username || data.login || "Користувач";
-                document.getElementById('other-profile-bio').textContent = data.bio || "";
+                document.getElementById('other-profile-avatar').src = data.avatarUrl || DEFAULT_AVATAR;
+                document.getElementById('other-profile-nickname').textContent = data.nickname || data.username || data.login || "...";
+                document.getElementById('other-profile-bio').textContent = data.bio || "...";
                 
                 const followers = data.followers || [];
                 const following = data.following || [];

@@ -2,6 +2,9 @@ import { db, auth } from './firebase-config.js';
 import { collection, doc, setDoc, query, orderBy, onSnapshot, where } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
+// УНІВЕРСАЛЬНЕ СІРЕ ЛОГО (SVG)
+const DEFAULT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='12' fill='%23e0e0e0'/><path d='M12 14c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4zm0-2c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z' fill='%23999999'/></svg>";
+
 document.addEventListener('DOMContentLoaded', () => {
     const profileGrid = document.querySelector('.profile-grid');
     const profileAvatar = document.querySelector('.profile-main-avatar');
@@ -12,11 +15,10 @@ document.addEventListener('DOMContentLoaded', () => {
     onAuthStateChanged(auth, async (user) => {
         if (!user) return;
 
-        // Завантаження власних публікацій
         if (profileGrid) {
             onSnapshot(query(collection(db, "posts"), where("authorId", "==", user.uid), orderBy("createdAt", "desc")), (snapshot) => {
                 profileGrid.innerHTML = ''; 
-                if (snapshot.empty) { profileGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">Тут поки порожньо...</p>'; return; }
+                if (snapshot.empty) { profileGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-secondary);">Тут поки порожньо...</p>'; return; }
                 snapshot.forEach((postDoc) => {
                     const post = postDoc.data();
                     const tile = document.createElement('div');
@@ -29,7 +31,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Синхронізація імені та аватара
         if (profileAvatar && profileNickname) {
             const userRef = doc(db, "users", user.uid);
             const defaultName = user.displayName || (user.email ? user.email.split('@')[0] : "Користувач");
@@ -42,9 +43,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         data.nickname = defaultName;
                     }
                     const displayName = data.nickname || data.username || data.login || defaultName;
-                    profileAvatar.src = data.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop';
+                    
+                    profileAvatar.src = data.avatarUrl || DEFAULT_AVATAR;
                     profileNickname.innerHTML = `${displayName} <i class="bi bi-pencil edit-icon"></i>`;
-                    if(profileBio) profileBio.innerHTML = `${data.bio || "Додати опис"} <i class="bi bi-pencil edit-icon"></i>`;
+                    if(profileBio) profileBio.innerHTML = `${data.bio || "..."} <i class="bi bi-pencil edit-icon"></i>`;
                     if(document.getElementById('my-followers-count')) document.getElementById('my-followers-count').textContent = (data.followers || []).length;
                     if(document.getElementById('my-following-count')) document.getElementById('my-following-count').textContent = (data.following || []).length;
                 } else {
@@ -54,7 +56,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Редагування профілю
     if (profileNickname) {
         profileNickname.addEventListener('click', async () => {
             if (!auth.currentUser) return;

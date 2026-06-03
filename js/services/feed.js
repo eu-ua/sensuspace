@@ -1,9 +1,10 @@
 import { db, auth } from '../firebase-config.js';
-import { collection, addDoc, doc, updateDoc, deleteDoc, arrayUnion, arrayRemove, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { collection, addDoc, doc, updateDoc, deleteDoc, arrayUnion, arrayRemove, query, orderBy, onSnapshot, serverTimestamp, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+const DEFAULT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='12' fill='%23e0e0e0'/><path d='M12 14c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4zm0-2c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z' fill='%23999999'/></svg>";
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    // --- ЛОГІКА ПРИКРІПЛЕННЯ МЕДІА ДО ПОСТА ---
     const attachImageBtn = document.getElementById('attach-image-btn');
     const attachVideoBtn = document.getElementById('attach-video-btn');
     const imageInput = document.getElementById('image-input');
@@ -44,7 +45,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- СТВОРЕННЯ ПОСТА ---
     const submitPostBtn = document.getElementById('submit-post-btn');
     const postTextInput = document.getElementById('post-text-input');
 
@@ -74,14 +74,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 await addDoc(collection(db, "posts"), {
                     text: text, mediaUrl: mediaUrl, mediaType: mediaType,
-                    authorId: user.uid, authorName: user.email.split('@')[0], 
+                    authorId: user.uid,
                     createdAt: serverTimestamp(), likedBy: [] 
                 });
 
                 postTextInput.value = '';
                 if (removeMediaBtn) removeMediaBtn.click(); 
                 document.getElementById('create-post-modal').classList.add('hidden'); 
-                await window.showCustomModal({ title: "Успіх", message: "Публікацію створено!" });
             } catch (error) {
                 console.error(error); await window.showCustomModal({ title: "Помилка", message: "Сталася помилка." });
             } finally {
@@ -90,7 +89,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- ЗАВАНТАЖЕННЯ СТРІЧКИ ---
     const feedContainer = document.querySelector('.feed-container');
 
     if (feedContainer) {
@@ -119,13 +117,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const postElement = document.createElement('div');
                 postElement.classList.add('post-card');
                 
+                // Рендеримо пусту заглушку, яка за секунду заповниться АКТУАЛЬНИМ аватаром
                 postElement.innerHTML = `
                     <div class="post-header">
-                        <div class="avatar-wrapper user-profile-trigger" data-user-id="${post.authorId}" data-user-name="${post.authorName}" style="width: 40px; height: 40px; overflow: hidden; border-radius: 50%; cursor: pointer;">
-                            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop" style="width: 100%; height: 100%; object-fit: cover;" alt="Avatar">
+                        <div class="avatar-wrapper user-profile-trigger" data-user-id="${post.authorId}" style="width: 40px; height: 40px; overflow: hidden; border-radius: 50%; cursor: pointer;">
+                            <img id="feed-avatar-${postId}" src="${DEFAULT_AVATAR}" style="width: 100%; height: 100%; object-fit: cover;" alt="Avatar">
                         </div>
                         <div class="post-user-info">
-                            <span class="post-username user-profile-trigger" data-user-id="${post.authorId}" data-user-name="${post.authorName}" style="cursor: pointer;">${post.authorName}</span>
+                            <span id="feed-name-${postId}" class="post-username user-profile-trigger" data-user-id="${post.authorId}" style="cursor: pointer;">...</span>
                             <span class="post-time">${timeString}</span>
                         </div>
                         ${isAuthor ? `<button class="post-menu-btn delete-post-btn"><i class="bi bi-trash" style="color: #ff4444;"></i></button>` : `<button class="post-menu-btn"><i class="bi bi-three-dots"></i></button>`}
@@ -136,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <i class="bi ${isLikedByMe ? 'bi-heart-fill' : 'bi-heart'}" style="${isLikedByMe ? 'color: #ff4444;' : ''}"></i> 
                             <span class="likes-count">${likesCount}</span>
                         </button>
-                        <button class="action-btn dm-btn" data-author-id="${post.authorId}" data-author-name="${post.authorName}"><i class="bi bi-send"></i></button>
+                        <button class="action-btn dm-btn" data-author-id="${post.authorId}"><i class="bi bi-send"></i></button>
                     </div>
                 `;
                 
@@ -147,11 +146,35 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }
                 feedContainer.appendChild(postElement);
+
+                // ОНОВЛЕННЯ: Динамічно тягнемо ім'я та фото автора з глобальної бази
+                getDoc(doc(db, "users", post.authorId)).then(docSnap => {
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        const displayName = data.nickname || data.username || data.login || (data.email ? data.email.split('@')[0] : "Користувач");
+                        const avatar = data.avatarUrl || DEFAULT_AVATAR;
+                        
+                        const avatarImg = document.getElementById(`feed-avatar-${postId}`);
+                        const nameSpan = document.getElementById(`feed-name-${postId}`);
+                        
+                        if (avatarImg) {
+                            avatarImg.src = avatar;
+                            avatarImg.parentElement.dataset.userAvatar = avatar;
+                            avatarImg.parentElement.dataset.userName = displayName;
+                        }
+                        if (nameSpan) {
+                            nameSpan.textContent = displayName;
+                            nameSpan.dataset.userName = displayName;
+                        }
+                        
+                        const dmBtn = postElement.querySelector('.dm-btn');
+                        if (dmBtn) dmBtn.dataset.authorName = displayName;
+                    }
+                });
             });
         });
     }
 
-    // --- ОБРОБКА ГЛОБАЛЬНИХ КЛІКІВ У СТРІЧЦІ ---
     document.addEventListener('click', async (e) => {
         const profileTrigger = e.target.closest('.user-profile-trigger');
         if (profileTrigger) {
