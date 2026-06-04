@@ -48,18 +48,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ==========================================
-    // 1. ВІДКРИТТЯ ПОШУКУ ВСЕРЕДИНІ ЧАТУ
-    // ==========================================
     if (chatSearchBtn) {
         chatSearchBtn.addEventListener('click', (e) => {
-            e.stopPropagation(); // Зупиняємо клік
+            e.stopPropagation();
             chatSearchBar.classList.toggle('hidden');
             if (!chatSearchBar.classList.contains('hidden')) chatInnerSearchInput.focus();
-            else { 
-                chatInnerSearchInput.value = ''; 
-                document.querySelectorAll('.chat-message').forEach(msg => msg.style.display = 'flex'); 
-            }
+            else { chatInnerSearchInput.value = ''; document.querySelectorAll('.chat-message').forEach(msg => msg.style.display = 'flex'); }
         });
     }
 
@@ -168,18 +162,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     const senderNameStr = isMine ? 'Ви' : document.getElementById('chat-room-name').textContent;
                     const safeTextStr = (msgData.text || 'Фото').replace(/"/g, '&quot;');
 
+                    // Залишаємо ТІЛЬКИ кнопку реакції (і ту ховаємо через CSS до наведення)
                     let actionsHtml = `
-                        <div class="msg-actions" style="display: flex; gap: 14px; margin-top: 6px; font-size: 15px; opacity: 0.7; align-items: center; position: relative;">
-                            <div class="reaction-picker hidden" style="position: absolute; bottom: 30px; ${isMine ? 'right: 0;' : 'left: 0;'} background: var(--bg-color); border-radius: 20px; padding: 8px 12px; display:flex; gap:12px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); border: 1px solid var(--border-color); z-index: 100;">
+                        <div class="msg-actions">
+                            <button class="react-btn"><i class="bi bi-emoji-smile"></i></button>
+                            <div class="reaction-picker hidden" style="position: absolute; bottom: 35px; ${isMine ? 'right: -30px;' : 'left: -30px;'} background: var(--bg-color); border-radius: 20px; padding: 8px 12px; display:flex; gap:12px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); border: 1px solid var(--border-color); z-index: 100;">
                                 <span class="emoji-btn" data-emoji="❤️" style="cursor:pointer; font-size: 20px; transition: transform 0.1s;">❤️</span>
                                 <span class="emoji-btn" data-emoji="👍" style="cursor:pointer; font-size: 20px; transition: transform 0.1s;">👍</span>
                                 <span class="emoji-btn" data-emoji="🔥" style="cursor:pointer; font-size: 20px; transition: transform 0.1s;">🔥</span>
                                 <span class="emoji-btn" data-emoji="😂" style="cursor:pointer; font-size: 20px; transition: transform 0.1s;">😂</span>
                             </div>
-                            <button class="react-btn" style="background: none; border: none; color: inherit; cursor: pointer; padding:0;" title="Реакція"><i class="bi bi-emoji-smile"></i></button>
-                            <button class="reply-btn" data-sender="${senderNameStr}" data-text="${safeTextStr}" style="background: none; border: none; color: inherit; cursor: pointer; padding:0;" title="Відповісти"><i class="bi bi-reply"></i></button>
-                            ${isMine && msgData.text ? `<button class="edit-btn" data-text="${safeTextStr}" style="background: none; border: none; color: inherit; cursor: pointer; padding:0;" title="Редагувати"><i class="bi bi-pencil"></i></button>` : ''}
-                            ${isMine ? `<button class="delete-msg-btn" style="background: none; border: none; color: #ff4444; cursor: pointer; padding:0;" title="Видалити"><i class="bi bi-trash"></i></button>` : ''}
                         </div>
                     `;
 
@@ -195,6 +187,73 @@ document.addEventListener('DOMContentLoaded', () => {
                         msgDiv.style.removeProperty('background-color'); msgDiv.style.removeProperty('padding'); msgDiv.style.removeProperty('border');
                     }
 
+                    // ЛОГІКА КОНТЕКСТНОГО МЕНЮ (Правий клік / Довге натискання)
+                    msgDiv.addEventListener('contextmenu', (e) => {
+                        e.preventDefault(); 
+                        
+                        const ctxMenu = document.getElementById('chat-context-menu');
+                        if(!ctxMenu) return;
+                        
+                        ctxMenu.innerHTML = ''; // Очищаємо старі кнопки
+                        
+                        const now = Date.now();
+                        const msgTime = msgData.timestamp ? msgData.timestamp.toMillis() : now;
+                        const diffMinutes = (now - msgTime) / (1000 * 60);
+                        const isEditable = isMine && msgData.text && diffMinutes <= 30; // Перевірка на 30 хвилин
+
+                        // Кнопка ВІДПОВІСТИ
+                        const btnReply = document.createElement('button');
+                        btnReply.innerHTML = '<i class="bi bi-reply"></i> Відповісти';
+                        btnReply.onclick = () => {
+                            editingMessageId = null;
+                            replyingToMessage = { id: msgId, sender: senderNameStr, text: safeTextStr };
+                            chatActionTitle.textContent = "Відповідь: " + senderNameStr;
+                            chatActionText.textContent = safeTextStr;
+                            chatActionPreviewContainer.classList.remove('hidden');
+                            sendMessageBtn.innerHTML = '<i class="bi bi-send-fill"></i>'; chatMessageInput.focus();
+                            ctxMenu.classList.add('hidden');
+                        };
+                        ctxMenu.appendChild(btnReply);
+
+                        // Кнопка РЕДАГУВАТИ (Тільки свої + до 30 хв)
+                        if (isEditable) {
+                            const btnEdit = document.createElement('button');
+                            btnEdit.innerHTML = '<i class="bi bi-pencil"></i> Редагувати';
+                            btnEdit.onclick = () => {
+                                replyingToMessage = null; editingMessageId = msgId;
+                                chatActionTitle.textContent = "Редагування"; chatActionText.textContent = msgData.text;
+                                chatActionPreviewContainer.classList.remove('hidden');
+                                chatMessageInput.value = msgData.text || ''; sendMessageBtn.innerHTML = '<i class="bi bi-check-lg"></i>'; chatMessageInput.focus();
+                                ctxMenu.classList.add('hidden');
+                            };
+                            ctxMenu.appendChild(btnEdit);
+                        }
+
+                        // Кнопка ВИДАЛИТИ (Тільки свої)
+                        if (isMine) {
+                            const btnDel = document.createElement('button');
+                            btnDel.innerHTML = '<i class="bi bi-trash"></i> Видалити';
+                            btnDel.style.color = '#ff4444';
+                            btnDel.onclick = async () => {
+                                ctxMenu.classList.add('hidden');
+                                const confirmDelete = await window.showCustomModal({ title: "Видалення", message: "Видалити це повідомлення?", type: "confirm" });
+                                if (confirmDelete) await deleteDoc(doc(db, "chats", roomId, "messages", msgId));
+                            };
+                            ctxMenu.appendChild(btnDel);
+                        }
+
+                        // Розумне позиціонування меню (щоб не вилазило за екран)
+                        let x = e.clientX;
+                        let y = e.clientY;
+                        if (x + 160 > window.innerWidth) x -= 160;
+                        if (y + 150 > window.innerHeight) y -= 150;
+                        
+                        ctxMenu.style.left = `${x}px`;
+                        ctxMenu.style.top = `${y}px`;
+                        ctxMenu.classList.remove('hidden');
+                    });
+
+                    // Реакції
                     const reactBtn = msgDiv.querySelector('.react-btn');
                     const reactionPicker = msgDiv.querySelector('.reaction-picker');
                     if (reactBtn && reactionPicker) {
@@ -213,36 +272,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         });
                     }
 
-                    const replyBtn = msgDiv.querySelector('.reply-btn');
-                    if (replyBtn) {
-                        replyBtn.addEventListener('click', () => {
-                            editingMessageId = null;
-                            replyingToMessage = { id: msgId, sender: replyBtn.dataset.sender, text: replyBtn.dataset.text };
-                            chatActionTitle.textContent = "Відповідь: " + replyBtn.dataset.sender;
-                            chatActionText.textContent = replyBtn.dataset.text;
-                            chatActionPreviewContainer.classList.remove('hidden');
-                            sendMessageBtn.innerHTML = '<i class="bi bi-send-fill"></i>'; chatMessageInput.focus();
-                        });
-                    }
-
-                    const editBtn = msgDiv.querySelector('.edit-btn');
-                    if (editBtn) {
-                        editBtn.addEventListener('click', () => {
-                            replyingToMessage = null; editingMessageId = msgId;
-                            chatActionTitle.textContent = "Редагування"; chatActionText.textContent = editBtn.dataset.text;
-                            chatActionPreviewContainer.classList.remove('hidden');
-                            chatMessageInput.value = msgData.text || ''; sendMessageBtn.innerHTML = '<i class="bi bi-check-lg"></i>'; chatMessageInput.focus();
-                        });
-                    }
-
-                    const delBtn = msgDiv.querySelector('.delete-msg-btn');
-                    if (delBtn) {
-                        delBtn.addEventListener('click', async () => {
-                            const confirmDelete = await window.showCustomModal({ title: "Видалення", message: "Видалити це повідомлення?", type: "confirm" });
-                            if (confirmDelete) await deleteDoc(doc(db, "chats", roomId, "messages", msgId));
-                        });
-                    }
-
                     if (isNew) {
                         chatMessagesContainer.appendChild(msgDiv);
                         chatMessagesContainer.scrollTo({ top: chatMessagesContainer.scrollHeight, behavior: 'smooth' });
@@ -257,9 +286,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // ==========================================
-    // 2. ВІДКРИТТЯ ПОШУКУ ПО ПІДПИСКАХ (ЛУПА)
-    // ==========================================
     const openChatListSearchBtn = document.getElementById('open-chat-search-btn');
     const chatSearchContainer = document.getElementById('chat-search-container');
     const followersSearchInput = document.getElementById('chat-followers-search');
@@ -267,7 +293,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (openChatListSearchBtn) {
         openChatListSearchBtn.addEventListener('click', (e) => {
-            e.stopPropagation(); // Зупиняємо клік, щоб глобальний обробник його не зловив
+            e.stopPropagation(); 
             chatSearchContainer.classList.toggle('hidden');
             if (!chatSearchContainer.classList.contains('hidden')) {
                 followersSearchInput.focus();
@@ -279,18 +305,20 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ==========================================
-    // 3. ГЛОБАЛЬНИЙ ОБРОБНИК (ЗНИКАННЯ ПРИ КЛІКУ ПОВЗ)
-    // ==========================================
     document.addEventListener('click', (e) => {
         // Закриваємо емодзі-меню
         if (!e.target.closest('.reaction-picker') && !e.target.closest('.react-btn')) {
             document.querySelectorAll('.reaction-picker').forEach(p => p.classList.add('hidden'));
         }
 
+        // Закриваємо КОНТЕКСТНЕ МЕНЮ
+        const ctxMenu = document.getElementById('chat-context-menu');
+        if (ctxMenu && !ctxMenu.classList.contains('hidden')) {
+            ctxMenu.classList.add('hidden');
+        }
+
         // Закриваємо пошук у списку чатів
         if (chatSearchContainer && !chatSearchContainer.classList.contains('hidden')) {
-            // Якщо клікнули НЕ по пошуку, НЕ по результатах і НЕ по лупі
             if (!chatSearchContainer.contains(e.target) && (!openChatListSearchBtn || !openChatListSearchBtn.contains(e.target)) && (!followersResults || !followersResults.contains(e.target))) {
                 chatSearchContainer.classList.add('hidden');
                 followersSearchInput.value = '';
@@ -311,9 +339,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // ==========================================
-    // ВІДПРАВКА ПОВІДОМЛЕННЯ
-    // ==========================================
     async function sendMessage() {
         const text = chatMessageInput.value.trim();
         const currentUser = auth.currentUser;
@@ -385,9 +410,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (chatMessageInput) chatMessageInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
 
 
-    // ==========================================
-    // ЛОГІКА ПОШУКУ ПО ПІДПИСКАХ
-    // ==========================================
     if (followersSearchInput && followersResults) {
         followersSearchInput.addEventListener('input', async (e) => {
             const qText = e.target.value.toLowerCase().trim();
@@ -439,7 +461,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             div.addEventListener('click', () => {
                                 followersSearchInput.value = '';
                                 followersResults.classList.add('hidden');
-                                if (chatSearchContainer) chatSearchContainer.classList.add('hidden'); // Ховаємо пошук після кліку
+                                if (chatSearchContainer) chatSearchContainer.classList.add('hidden'); 
                                 window.openChatWithUser(uId, displayName, avatar);
                             });
                             followersResults.appendChild(div);
@@ -453,9 +475,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ==========================================
-    // ДИНАМІЧНИЙ СПИСОК ЧАТІВ
-    // ==========================================
     const dynamicChatList = document.getElementById('dynamic-chat-list');
     const localUserCache = {}; 
 

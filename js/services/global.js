@@ -13,22 +13,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const messageUserBtn = document.getElementById('message-user-btn');
     
     let currentViewedUserId = null;
-    
-    // Змінні для вимкнення радарів, коли ми закриваємо профіль
     let otherProfileUnsubscribe = null;
     let otherProfilePostsUnsubscribe = null;
 
-    // МАГІЯ 1: Живий кеш усіх користувачів для пошуку
+    let currentOtherFollowers = [];
+    let currentOtherFollowing = [];
+
     let allUsers = [];
     let currentSearchQuery = "";
 
-    // Радар слухає базу 24/7. Якщо хтось змінив фото чи ім'я — масив миттєво оновлюється
+    const usersListModal = document.getElementById('users-list-modal');
+    const closeUsersListBtn = document.getElementById('close-users-list-btn');
+    const usersListTitle = document.getElementById('users-list-title');
+    const usersListContainer = document.getElementById('users-list-container');
+
     onSnapshot(collection(db, "users"), (snapshot) => {
         allUsers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        // Якщо людина прямо зараз щось шукає, миттєво перемальовуємо результати!
-        if (currentSearchQuery) {
-            renderSearchResults();
-        }
+        if (currentSearchQuery) renderSearchResults();
     });
 
     if (globalSearchInput && globalContentArea) {
@@ -67,55 +68,174 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!found) globalContentArea.innerHTML = '<p style="text-align:center; color: var(--text-secondary); margin-top: 20px;">Нікого не знайдено :(</p>';
     }
 
+    // ==========================================
+    // ЛОГІКА СПИСКУ ПІДПИСНИКІВ
+    // ==========================================
+    if (closeUsersListBtn) {
+        closeUsersListBtn.addEventListener('click', () => usersListModal.classList.add('hidden'));
+    }
+
+    if (usersListModal) {
+        usersListModal.addEventListener('click', (e) => {
+            if (e.target === usersListModal) {
+                usersListModal.classList.add('hidden');
+            }
+        });
+    }
+
+    window.openUsersList = (title, userIdsArray) => {
+        if (!usersListModal) return;
+        usersListTitle.textContent = title;
+        usersListContainer.innerHTML = '';
+
+        if (!userIdsArray || userIdsArray.length === 0) {
+            usersListContainer.innerHTML = '<p style="text-align:center; color: var(--text-secondary); margin: 30px 0;">Поки що нікого немає</p>';
+            usersListModal.classList.remove('hidden');
+            return;
+        }
+
+        let found = false;
+        allUsers.forEach(u => {
+            if (userIdsArray.includes(u.id)) {
+                found = true;
+                const avatar = u.avatarUrl || DEFAULT_AVATAR;
+                const displayName = u.nickname || u.username || u.login || 'Користувач';
+                
+                const card = document.createElement('div');
+                card.style.display = 'flex';
+                card.style.alignItems = 'center';
+                card.style.padding = '12px 0';
+                card.style.borderBottom = '1px solid var(--border-color)';
+                card.style.cursor = 'pointer';
+                
+                // ОНОВЛЕНИЙ МІНІМАЛІСТИЧНИЙ ДИЗАЙН КАРТКИ
+                card.innerHTML = `
+                    <img src="${avatar}" alt="Avatar" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid var(--border-color);">
+                    <div style="flex: 1; margin-left: 14px; overflow: hidden; display: flex; flex-direction: column; justify-content: center;">
+                        <h4 style="font-size: 16px; font-weight: 600; color: var(--text-color); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${displayName}</h4>
+                        ${u.bio ? `<p style="font-size: 13px; color: var(--text-secondary); margin: 2px 0 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${u.bio.substring(0, 30)}...</p>` : ''}
+                    </div>
+                `;
+                
+                card.addEventListener('click', () => {
+                    usersListModal.classList.add('hidden');
+                    if (auth.currentUser && u.id === auth.currentUser.uid) {
+                        document.querySelector('.nav-btn[data-screen="screen-profile"]')?.click();
+                    } else {
+                        window.openOtherProfile(u.id, { nickname: displayName, avatarUrl: avatar });
+                    }
+                });
+                usersListContainer.appendChild(card);
+            }
+        });
+
+        if (!found) {
+            usersListContainer.innerHTML = '<p style="text-align:center; color: var(--text-secondary); margin: 30px 0;">Користувачів не знайдено</p>';
+        }
+
+        usersListModal.classList.remove('hidden');
+    };
+
+    document.getElementById('other-followers-btn')?.addEventListener('click', () => {
+        window.openUsersList('Читачі', currentOtherFollowers);
+    });
+    document.getElementById('other-following-btn')?.addEventListener('click', () => {
+        window.openUsersList('Підписки', currentOtherFollowing);
+    });
+
+    document.getElementById('my-followers-btn')?.addEventListener('click', () => {
+        if (!auth.currentUser) return;
+        const me = allUsers.find(u => u.id === auth.currentUser.uid);
+        if (me) window.openUsersList('Мої читачі', me.followers || []);
+    });
+    document.getElementById('my-following-btn')?.addEventListener('click', () => {
+        if (!auth.currentUser) return;
+        const me = allUsers.find(u => u.id === auth.currentUser.uid);
+        if (me) window.openUsersList('Мої підписки', me.following || []);
+    });
+
+
+    // ==========================================
+    // ЛОГІКА ВІДКРИТТЯ ПРОФІЛЮ
+    // ==========================================
     if (closeOtherProfileBtn) {
         closeOtherProfileBtn.addEventListener('click', () => {
-            document.querySelector('.nav-btn.active')?.click();
-            // Вимикаємо радари, коли профіль закритий, щоб економити пам'ять
             if(otherProfileUnsubscribe) otherProfileUnsubscribe();
             if(otherProfilePostsUnsubscribe) otherProfilePostsUnsubscribe();
+            
+            if (window.previousScreenForProfile === 'chat-room-modal') {
+                document.querySelectorAll('.app-screen').forEach(s => { s.classList.remove('active'); s.classList.add('hidden'); });
+                document.getElementById('chat-room-modal').classList.add('active');
+                document.getElementById('chat-room-modal').classList.remove('hidden');
+            } else {
+                document.querySelector('.nav-btn.active')?.click();
+            }
+            window.previousScreenForProfile = null;
         });
     }
 
     window.openOtherProfile = async (userId, initialData = {}) => {
+        if (document.getElementById('chat-room-modal') && !document.getElementById('chat-room-modal').classList.contains('hidden')) {
+            window.previousScreenForProfile = 'chat-room-modal';
+        } else {
+            window.previousScreenForProfile = 'main';
+        }
+
         currentViewedUserId = userId;
         document.querySelectorAll('.app-screen').forEach(s => { s.classList.remove('active'); s.classList.add('hidden'); });
         otherProfileModal.classList.add('active');
         otherProfileModal.classList.remove('hidden');
 
-        // Миттєво підставляємо те, що вже знаємо з пошуку
         document.getElementById('other-profile-avatar').src = initialData.avatarUrl || DEFAULT_AVATAR;
         document.getElementById('other-profile-nickname').textContent = initialData.nickname || "...";
-        document.getElementById('other-profile-bio').textContent = initialData.bio || "...";
+        
+        const initBio = initialData.bio ? initialData.bio.trim() : "";
+        document.getElementById('other-profile-bio').textContent = initBio;
+        document.getElementById('other-profile-bio').style.display = initBio ? 'block' : 'none';
+
         document.getElementById('other-followers-count').textContent = (initialData.followers || []).length;
         document.getElementById('other-following-count').textContent = (initialData.following || []).length;
+        currentOtherFollowers = initialData.followers || [];
+        currentOtherFollowing = initialData.following || [];
         
         const grid = document.getElementById('other-profile-grid');
         grid.innerHTML = '<p style="text-align:center; grid-column:1/-1;">Завантаження...</p>';
         
-        // МАГІЯ 2: Живий радар для даних чужого профілю (Підписки/Аватар)
         if (otherProfileUnsubscribe) otherProfileUnsubscribe();
         otherProfileUnsubscribe = onSnapshot(doc(db, "users", userId), (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 document.getElementById('other-profile-avatar').src = data.avatarUrl || DEFAULT_AVATAR;
                 document.getElementById('other-profile-nickname').textContent = data.nickname || data.username || data.login || "...";
-                document.getElementById('other-profile-bio').textContent = data.bio || "...";
+                
+                const userBio = data.bio ? data.bio.trim() : "";
+                document.getElementById('other-profile-bio').textContent = userBio;
+                document.getElementById('other-profile-bio').style.display = userBio ? 'block' : 'none';
                 
                 const followers = data.followers || [];
                 const following = data.following || [];
+                
+                currentOtherFollowers = followers;
+                currentOtherFollowing = following;
+
                 document.getElementById('other-followers-count').textContent = followers.length;
                 document.getElementById('other-following-count').textContent = following.length;
                 
                 const myUid = auth.currentUser?.uid;
                 if (myUid && followers.includes(myUid)) {
-                    followBtn.textContent = "Відписатися"; followBtn.style.background = "var(--bg-secondary)"; followBtn.style.color = "var(--text-primary)";
+                    followBtn.textContent = "Відписатися"; 
+                    followBtn.style.background = "transparent"; 
+                    followBtn.style.color = "var(--text-color, #000)";
+                    followBtn.style.border = "1px solid var(--border-color, #ccc)";
                 } else {
-                    followBtn.textContent = "Підписатися"; followBtn.style.background = "var(--accent-color)"; followBtn.style.color = "white";
+                    followBtn.textContent = "Підписатися"; 
+                    followBtn.style.background = "var(--text-color, #000)"; 
+                    followBtn.style.color = "var(--bg-color, #fff)";
+                    followBtn.style.border = "none";
                 }
             }
         });
 
-        // МАГІЯ 3: Живий радар для ПУБЛІКАЦІЙ чужого профілю!
         if (otherProfilePostsUnsubscribe) otherProfilePostsUnsubscribe();
         otherProfilePostsUnsubscribe = onSnapshot(query(collection(db, "posts"), where("authorId", "==", userId), orderBy("createdAt", "desc")), (snapshot) => {
             grid.innerHTML = '';
@@ -142,7 +262,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const targetRef = doc(db, "users", currentViewedUserId);
             followBtn.disabled = true; 
             try {
-                // Тут getDoc нормальний, бо ми лише 1 раз перевіряємо статус перед дією
                 const targetSnap = await getDoc(targetRef);
                 const isFollowing = targetSnap.exists() && (targetSnap.data().followers || []).includes(myUid);
                 if (isFollowing) {
