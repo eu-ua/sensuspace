@@ -2,7 +2,7 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Sensu Space</title>
     
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -189,6 +189,58 @@
         }
         /* Якщо я сам поставив цю реакцію — вона підсвічується */
         .reaction-pill.reacted-by-me { border-color: var(--text-color); background: var(--border-color); }
+
+        /* ================================================= */
+        /* МОБІЛЬНА АДАПТАЦІЯ (ЕКРАНИ МЕНШЕ 600px)           */
+        /* ================================================= */
+        @media (max-width: 600px) {
+            
+            /* 1. Розтягуємо контейнери на всі 100% екрана */
+            .chat-wrapper, .other-profile-wrapper, section > div[style*="max-width: 600px"] {
+                max-width: 100% !important;
+                width: 100% !important;
+                border-radius: 0 !important;
+                border: none !important;
+            }
+
+            /* 2. Адаптація для iPhone (Safe Area) */
+            .bottom-nav {
+                padding-bottom: env(safe-area-inset-bottom) !important;
+            }
+            .chat-room-input-area {
+                padding-bottom: calc(10px + env(safe-area-inset-bottom)) !important;
+            }
+
+            /* 3. Відступи, щоб нижнє меню не перекривало контент */
+            .feed-container, .space-container, #chat-messages-container, .profile-grid {
+                padding-bottom: calc(85px + env(safe-area-inset-bottom)) !important;
+            }
+
+            /* 4. ШТОРКА (Bottom Sheet): Модальні вікна виїжджають знизу */
+            .popup-modal {
+                align-items: flex-end !important; /* Притискаємо до низу */
+                padding: 0 !important;
+            }
+            .popup-content {
+                width: 100% !important;
+                max-width: 100% !important;
+                border-radius: 24px 24px 0 0 !important; /* Округлі тільки верхні кути */
+                margin: 0 !important;
+                padding-bottom: calc(20px + env(safe-area-inset-bottom)) !important; /* Місце знизу */
+                animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            }
+
+            /* 5. Анімація виїзду шторки */
+            @keyframes slideUp {
+                from { transform: translateY(100%); }
+                to { transform: translateY(0); }
+            }
+
+            /* 6. Зменшуємо шрифти для компактності */
+            .top-header h2 { font-size: 22px !important; }
+            .post-text { font-size: 14px !important; }
+            .post-header .post-username { font-size: 14px !important; }
+        }
 
     </style>
 </head>
@@ -487,8 +539,8 @@
             </div>
         </div>
 
-        <section id="chat-room-modal" class="app-screen hidden">
-            <div class="chat-wrapper" style="display: flex; flex-direction: column; height: 100vh; max-width: 600px; margin: 0 auto; background: var(--bg-color);">
+        <section id="chat-room-modal" class="app-screen hidden" style="overflow: hidden; height: 100vh;">
+            <div class="chat-wrapper" style="display: flex; flex-direction: column; height: 100%; max-width: 600px; margin: 0 auto; background: var(--bg-color);">
                 
                 <div class="chat-header" style="flex-shrink: 0; padding: 15px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); background: var(--bg-color); z-index: 10;">
                     <div style="display: flex; align-items: center; gap: 15px;">
