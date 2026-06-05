@@ -16,25 +16,30 @@
     <link rel="stylesheet" href="css/auth.css">
 
     <style>
+        .post-media, .post-card img { width: 100% !important; height: auto !important; max-height: 85vh !important; object-fit: contain !important; border-radius: 12px; }
+
         #chat-action-preview-container.hidden, #chat-media-preview-container.hidden, #chat-search-bar.hidden, .reaction-picker.hidden { display: none !important; }
 
-        /* ЧАТ */
         .chat-wrapper { width: 100%; max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; height: 100%; }
         #chat-messages-container { flex: 1; overflow-y: auto; padding: 20px 15px; display: flex; flex-direction: column; gap: 12px; }
         .chat-message { max-width: 78%; padding: 12px 18px; font-size: 15px; line-height: 1.4; word-wrap: break-word; display: flex; flex-direction: column; position: relative; }
+        
         .chat-message.sent { align-self: flex-end; background-color: #2D2D2D !important; color: #E0E0E0 !important; border-radius: 24px 24px 6px 24px; }
         .chat-message.received { align-self: flex-start; background-color: #E0E0E0 !important; color: #121212 !important; border: none; border-radius: 24px 24px 24px 6px; }
+        
         [data-theme="light"] .chat-message.sent { background-color: #EAEAEA !important; color: #1A1A1A !important; }
         [data-theme="light"] .chat-message.received { background-color: #1A1A1A !important; color: #F8F9FA !important; }
+        
         .chat-message-time { font-size: 11px; margin-top: 4px; font-weight: 500; }
         .chat-message.sent .chat-message-time { align-self: flex-end; opacity: 0.6; }
         .chat-message.received .chat-message-time { align-self: flex-start; opacity: 0.5; }
         
-        .chat-room-input-area { padding: 10px 15px; display: flex; gap: 12px; align-items: center; background-color: var(--bg-color); padding-bottom: calc(15px + env(safe-area-inset-bottom)); border-top: 1px solid #2D2D2D; }
+        .chat-room-input-area { padding: 10px 15px; display: flex; gap: 12px; align-items: center; background-color: var(--bg-color); padding-bottom: max(15px, env(safe-area-inset-bottom)); border-top: 1px solid #2D2D2D; }
         .chat-room-input-area input { flex: 1; background-color: #1E1E1E; border: 1px solid transparent; border-radius: 24px; padding: 14px 20px; color: var(--text-color); outline: none; font-size: 15px; }
         .chat-room-input-area input:focus { border: 1px solid #555; }
         .chat-room-input-area button { background: transparent; color: var(--text-color); border: none; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 22px; cursor: pointer; transition: transform 0.1s; }
         .chat-room-input-area button:active { transform: scale(0.9); }
+
         [data-theme="light"] .chat-room-input-area { border-top: 1px solid #EAEAEA; }
         [data-theme="light"] .chat-room-input-area input { background-color: #F0F0F0; color: #1A1A1A; }
         [data-theme="light"] .chat-room-input-area input:focus { border: 1px solid #CCC; }
@@ -46,26 +51,42 @@
         .chat-info { flex: 1; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
         .chat-name { font-weight: 600; font-size: 16px; color: var(--text-color); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .chat-last-message { font-size: 13px; color: #888; margin: 0; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
         [data-theme="light"] .chat-item { background: #F8F9FA !important; border: 1px solid #EAEAEA; }
         [data-theme="light"] .chat-item:hover { background: #EAEAEA !important; }
 
         #chat-action-preview-container, #chat-media-preview-container, #chat-search-bar { background-color: #1E1E1E; border-color: #2D2D2D; }
         #chat-inner-search-input { background-color: #121212 !important; color: var(--text-color) !important; border-color: #333 !important; }
+        
         [data-theme="light"] #chat-action-preview-container, [data-theme="light"] #chat-media-preview-container, [data-theme="light"] #chat-search-bar { background-color: #F8F9FA; border-color: #EAEAEA; }
         [data-theme="light"] #chat-inner-search-input { background-color: #FFFFFF !important; border-color: #DDD !important; color: #1A1A1A !important; }
 
-        /* ПРОСТІР ТА СТРІЧКА */
+        .msg-actions { position: absolute; top: 50%; transform: translateY(-50%); display: flex; align-items: center; z-index: 10; }
+        .chat-message.sent .msg-actions { left: -36px; }
+        .chat-message.received .msg-actions { right: -36px; }
+        .chat-message .react-btn { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); opacity: 0; pointer-events: none; transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.1); padding: 0; }
+        .chat-message:hover .react-btn { opacity: 1; pointer-events: auto; }
+        
+        #chat-context-menu { position: fixed; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); display: flex; flex-direction: column; overflow: hidden; z-index: 9999; min-width: 160px; padding: 5px 0; }
+        #chat-context-menu button { background: none; border: none; padding: 12px 16px; text-align: left; color: var(--text-primary); cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 12px; transition: background 0.2s; }
+        #chat-context-menu button:hover { background: var(--border-color); }
+
         .space-container { padding-bottom: 20px; background: var(--bg-color); }
         .hide-scroll::-webkit-scrollbar { display: none; }
         .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .clean-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 0 15px 15px 15px; }
+        .clean-card { position: relative; aspect-ratio: 4/5; border-radius: 16px; overflow: hidden; background: var(--bg-secondary); cursor: pointer; }
+        .clean-card img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
+        .clean-card:hover img { transform: scale(1.05); }
+        .clean-card-overlay { position: absolute; bottom: 0; left: 0; width: 100%; background: linear-gradient(transparent, rgba(0,0,0,0.8)); padding: 30px 12px 12px 12px; display: flex; align-items: center; gap: 8px; }
+        .clean-card-overlay img { width: 24px; height: 24px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.5); }
+        .clean-card-overlay span { color: #fff; font-size: 12px; font-weight: 600; text-shadow: 0 1px 4px rgba(0,0,0,0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     
         .post-media, .post-card img { width: 100% !important; height: auto !important; max-height: none !important; object-fit: contain !important; border-radius: 16px !important; border: 1px solid var(--border-color); background-color: transparent !important; }
     
-        /* ================================================= */
-        /* ОНОВЛЕНІ РЕАКЦІЇ (ЗАФАРБОВУВАННЯ)                 */
-        /* ================================================= */
         .post-bottom-actions { display: flex; gap: 12px; align-items: center; margin-top: 12px; }
-        .add-reaction-btn { background: none; border: none; font-size: 22px; cursor: pointer; padding: 0; transition: transform 0.1s; display: flex; align-items: center; }
+        .add-reaction-btn { background: none; border: none; font-size: 22px; color: var(--text-secondary); cursor: pointer; padding: 0; transition: transform 0.1s; display: flex; align-items: center; }
         .add-reaction-btn:active { transform: scale(0.9); }
         .reaction-picker-container { position: relative; }
         .post-reaction-picker { position: absolute; bottom: 35px; left: -10px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 20px; padding: 8px 12px; display: flex; gap: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); z-index: 100; }
@@ -73,26 +94,38 @@
         .post-reaction-picker .emoji-btn:hover { transform: scale(1.2); }
         .post-reactions-list { display: flex; gap: 8px; flex-wrap: wrap; flex: 1; }
         .reaction-pill { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 16px; padding: 4px 10px; font-size: 13px; display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 600; color: var(--text-color); transition: background 0.2s; user-select: none; }
-        
-        /* Змінений стиль для моїх реакцій (чорна плашка, білий текст) */
         .reaction-pill.reacted-by-me { background: var(--text-color) !important; color: var(--bg-color) !important; border-color: var(--text-color) !important; }
 
-        .feed-filters::-webkit-scrollbar { display: none; }
-        .feed-filters .space-filter-btn { background: transparent; color: var(--text-secondary); }
-        .feed-filters .space-filter-btn.active { background: var(--text-color); color: var(--bg-color); }
-
-        /* МОБІЛЬНА АДАПТАЦІЯ */
         @media (max-width: 600px) {
             .chat-wrapper, .other-profile-wrapper, section > div[style*="max-width: 600px"] { max-width: 100% !important; width: 100% !important; border-radius: 0 !important; border: none !important; }
             .bottom-nav { padding-bottom: env(safe-area-inset-bottom) !important; }
+            .chat-room-input-area { padding-bottom: calc(10px + env(safe-area-inset-bottom)) !important; }
             .feed-container, .space-container, #chat-messages-container, .profile-grid { padding-bottom: calc(85px + env(safe-area-inset-bottom)) !important; }
+            
+            /* ЖОРСТКА ФІКСАЦІЯ МОДАЛЬНИХ ВІКОН ДЛЯ КЛАВІАТУРИ */
             .popup-modal { align-items: flex-end !important; padding: 0 !important; }
-            .popup-content { width: 100% !important; max-width: 100% !important; border-radius: 24px 24px 0 0 !important; margin: 0 !important; padding-bottom: calc(20px + env(safe-area-inset-bottom)) !important; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+            .popup-content { 
+                width: 100% !important; 
+                max-width: 100% !important; 
+                border-radius: 24px 24px 0 0 !important; 
+                margin: 0 !important; 
+                padding-bottom: calc(20px + env(safe-area-inset-bottom)) !important; 
+                animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
+                max-height: 85vh !important; 
+                max-height: 85dvh !important; 
+                display: flex !important; 
+                flex-direction: column !important; 
+                overflow-y: hidden !important; /* Головний контейнер не скролиться */
+            }
             @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
             .top-header h2 { font-size: 22px !important; }
             .post-text { font-size: 14px !important; }
             .post-header .post-username { font-size: 14px !important; }
         }
+
+        .feed-filters::-webkit-scrollbar { display: none; }
+        .feed-filters .space-filter-btn { background: transparent; color: var(--text-secondary); }
+        .feed-filters .space-filter-btn.active { background: var(--text-color); color: var(--bg-color); }
     </style>
 </head>
 <body>
@@ -116,6 +149,9 @@
             </div>
         </div>
 
+        <!-- ===================================== -->
+        <!-- ЄДИНИЙ ЕКРАН "ПРОСТІР + СТРІЧКА"      -->
+        <!-- ===================================== -->
         <section id="screen-home" class="app-screen active">
             <div class="space-container" style="width: 100%; max-width: 600px; margin: 0 auto; height: 100%; display: flex; flex-direction: column;">
                 
@@ -129,40 +165,41 @@
 
                 <div class="space-scroll-area" style="flex: 1; overflow-y: auto; padding-bottom: 85px;">
                     
+                    <!-- 1. Відкриття дня -->
                     <div style="margin-top: 15px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 20px; margin-bottom: 16px;">
                             <h3 style="font-size: 17px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 8px;">✨ Відкриття дня</h3>
                             <span style="font-size: 13px; color: var(--text-secondary); cursor: pointer; font-weight: 600; transition: 0.2s;">Більше</span>
                         </div>
-                        <div id="discoveries-container" class="hide-scroll" style="display: flex; gap: 18px; overflow-x: auto; padding: 0 20px 10px 20px; scroll-behavior: smooth; -webkit-overflow-scrolling: touch;">
-                        </div>
+                        <div id="discoveries-container" class="hide-scroll" style="display: flex; gap: 18px; overflow-x: auto; padding: 0 20px 10px 20px; scroll-behavior: smooth; -webkit-overflow-scrolling: touch;"></div>
                     </div>
 
+                    <!-- 2. Колаборації -->
                     <div style="margin-top: 25px; margin-bottom: 10px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 20px; margin-bottom: 16px;">
                             <h3 style="font-size: 17px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 8px;"><i class="bi bi-people-fill" style="font-size: 18px;"></i> Колаборації</h3>
                             <span id="add-collab-btn" style="font-size: 13px; color: var(--text-secondary); cursor: pointer; font-weight: 600; transition: 0.2s;">Додати</span>
                         </div>
-                        <div id="collaborations-container" class="hide-scroll" style="display: flex; gap: 16px; overflow-x: auto; padding: 0 20px 10px 20px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;">
-                        </div>
+                        <div id="collaborations-container" class="hide-scroll" style="display: flex; gap: 16px; overflow-x: auto; padding: 0 20px 10px 20px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;"></div>
                     </div>
 
+                    <!-- 3. Фільтри стрічки -->
                     <div class="feed-filters" style="padding: 15px 20px 5px 20px; display: flex; gap: 10px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;">
                         <button class="space-filter-btn active" style="flex-shrink: 0; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 14px; border: none; cursor: pointer; transition: 0.2s;">Всі пости</button>
                         <button class="space-filter-btn" style="flex-shrink: 0; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 14px; border: none; cursor: pointer; transition: 0.2s;">В процесі 🛠️</button>
                         <button class="space-filter-btn" style="flex-shrink: 0; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 14px; border: none; cursor: pointer; transition: 0.2s;">Потрібна критика 💬</button>
                     </div>
 
+                    <!-- 4. Стрічка публікацій -->
                     <div class="feed-container" style="padding-top: 10px;">
-                        <p style="text-align:center; color: var(--text-secondary); margin-top: 40px; padding: 0 20px;">
-                            Тут з'являться текстові пости та оновлення людей, на яких ви підписані.
-                        </p>
+                        <p style="text-align:center; color: var(--text-secondary); margin-top: 40px; padding: 0 20px;">Завантаження...</p>
                     </div>
 
                 </div>
             </div>
         </section>
 
+        <!-- ПОВІДОМЛЕННЯ -->
         <section id="screen-messages" class="app-screen hidden">
             <div style="width: 100%; max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; height: 100%;">
                 <div class="chat-header" style="padding: 15px; display: flex; align-items: center; justify-content: space-between;">
@@ -180,6 +217,7 @@
             </div>
         </section>
 
+        <!-- ПРОФІЛЬ -->
         <section id="screen-profile" class="app-screen hidden">
             <div class="profile-top-bar">
                 <button class="icon-btn create-post-trigger"><i class="bi bi-plus-square"></i></button>
@@ -203,12 +241,14 @@
             <div class="profile-grid"></div>
         </section>
 
+        <!-- НИЖНЯ ПАНЕЛЬ НАВІГАЦІЇ -->
         <nav class="bottom-nav">
             <button class="nav-btn active" data-screen="screen-home"><i class="bi bi-compass"></i></button>
             <button class="nav-btn" data-screen="screen-messages"><i class="bi bi-chat-square-text"></i></button>
             <button class="nav-btn" data-screen="screen-profile"><i class="bi bi-person"></i></button>
         </nav>
 
+        <!-- НАЛАШТУВАННЯ -->
         <div id="settings-modal" class="popup-modal hidden">
             <div class="popup-content" style="position: relative;">
                 <button id="close-settings-btn" class="icon-btn" style="position: absolute; top: 15px; right: 15px; color: #888; font-size: 20px;"><i class="bi bi-x-lg"></i></button>
@@ -225,36 +265,8 @@
                 </div>
             </div>
         </div>
-        
-        <div id="create-post-modal" class="popup-modal hidden">
-            <div class="popup-content">
-                <div class="create-post-header">
-                    <button id="close-create-post-btn" class="icon-btn text-gray"><i class="bi bi-x-lg"></i></button>
-                    <h3 class="sheet-title">Новий запис</h3>
-                    <button id="submit-post-btn" class="text-btn-accent">Опублікувати</button>
-                </div>
-                <div class="create-post-body">
-                    <select id="post-category-select" style="width: 100%; padding: 12px 15px; border-radius: 16px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; font-weight: 600; outline: none; margin-bottom: 12px; cursor: pointer; -webkit-appearance: none; appearance: none;">
-                        <option value="Всі">Звичайний запис</option>
-                        <option value="В процесі">В процесі 🛠️</option>
-                        <option value="Критика">Потрібна критика 💬</option>
-                    </select>
-                    <textarea id="post-text-input" placeholder="Що вас надихає зараз?" rows="5"></textarea>
-                    <div id="media-preview-container" class="hidden">
-                        <button id="remove-media-btn" class="remove-media-icon"><i class="bi bi-x-circle-fill"></i></button>
-                        <img id="image-preview" class="hidden" src="">
-                        <video id="video-preview" class="hidden" controls></video>
-                    </div>
-                </div>
-                <div class="create-post-toolbar">
-                    <button class="attach-btn" id="attach-image-btn"><i class="bi bi-image"></i></button>
-                    <button class="attach-btn" id="attach-video-btn"><i class="bi bi-camera-video"></i></button>
-                    <input type="file" id="image-input" accept="image/*" hidden>
-                    <input type="file" id="video-input" accept="video/*" hidden>
-                </div>
-            </div>
-        </div>
 
+        <!-- КРАСИВІ ALERTS -->
         <div id="custom-modal" class="popup-modal hidden">
             <div class="popup-content" style="max-width: 320px; text-align: center; margin: auto; border-radius: 20px;">
                 <h3 id="custom-modal-title" class="sheet-title" style="margin-bottom: 10px; justify-content: center;">Повідомлення</h3>
@@ -290,6 +302,7 @@
             </div>
         </section>
 
+        <!-- ЕКРАН ЧУЖОГО ПРОФІЛЮ -->
         <div id="other-user-profile-modal" class="hidden" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100dvh; z-index: 9999; background: var(--bg-color); overflow-y: auto;">
             <div class="other-profile-wrapper" style="width: 100%; max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; min-height: 100%;">
                 <div style="display: flex; justify-content: space-between; padding: 15px; position: sticky; top: 0; background: var(--bg-color); z-index: 10; border-bottom: 1px solid var(--border-color);">
@@ -327,6 +340,7 @@
             </div>
         </div>
 
+        <!-- СПИСКИ КОРИСТУВАЧІВ -->
         <div id="users-list-modal" class="popup-modal hidden" style="z-index: 3000; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0, 0, 0, 0.4); display: flex; align-items: center; justify-content: center; backdrop-filter: blur(3px);">
             <div class="popup-content" style="width: 90%; max-width: 400px; max-height: 70vh; background: var(--bg-color); border-radius: 24px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
                 <div class="popup-header" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border-color);">
@@ -337,6 +351,7 @@
             </div>
         </div>
 
+        <!-- ПОДІЛИТИСЯ -->
         <div id="share-post-modal" class="popup-modal hidden" style="z-index: 3500; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0, 0, 0, 0.4); display: flex; align-items: center; justify-content: center; backdrop-filter: blur(3px);">
             <div class="popup-content" style="width: 90%; max-width: 400px; max-height: 70vh; background: var(--bg-color); border-radius: 24px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
                 <div class="popup-header" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border-color);">
@@ -349,46 +364,89 @@
             </div>
         </div>
 
-        <div id="create-collab-modal" class="popup-modal hidden" style="z-index: 3500; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0, 0, 0, 0.4); display: flex; align-items: center; justify-content: center; backdrop-filter: blur(3px);">
-            <div class="popup-content" style="width: 90%; max-width: 400px; background: var(--bg-color); border-radius: 24px; padding: 20px; display: flex; flex-direction: column; gap: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: var(--text-color);">Нова колаборація</h3>
-                    <button id="close-collab-modal-btn" class="icon-btn" style="margin: 0; padding: 0;"><i class="bi bi-x-lg"></i></button>
+        <!-- ========================================================================= -->
+        <!-- ІДЕАЛЬНІ МОБІЛЬНІ ВІКНА ДЛЯ СТВОРЕННЯ/РЕДАГУВАННЯ (З ФІКСОВАНИМ НИЗОМ)    -->
+        <!-- ========================================================================= -->
+        
+        <!-- 1. СТВОРЕННЯ ПОСТУ -->
+        <div id="create-post-modal" class="popup-modal hidden" style="z-index: 3500; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh; background: rgba(0, 0, 0, 0.4); display: flex; align-items: flex-end; justify-content: center;">
+            <!-- popup-content тепер гнучкий. Всі елементи крім textarea не стискаються. Textarea стискається і скролиться. -->
+            <div class="popup-content" style="width: 100%; max-width: 600px; max-height: 85dvh; display: flex; flex-direction: column; background: var(--bg-color); border-radius: 24px 24px 0 0; padding: 20px; gap: 15px; box-shadow: 0 -10px 40px rgba(0,0,0,0.1);">
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+                    <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: var(--text-color);">Новий запис</h3>
+                    <button id="close-create-post-btn" class="icon-btn" style="margin: 0; padding: 0; color: var(--text-secondary);"><i class="bi bi-x-lg"></i></button>
                 </div>
-                <select id="collab-type" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-color); font-size: 14px; outline: none; cursor: pointer;">
-                    <option value="Шукаю">Шукаю в команду</option>
-                    <option value="Відкритий">Відкритий(а) до проєктів</option>
+                
+                <select id="post-category-select" style="flex-shrink: 0; width: 100%; padding: 12px 15px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; font-weight: 600; outline: none; cursor: pointer; -webkit-appearance: none; appearance: none;">
+                    <option value="Всі">Звичайний запис</option>
+                    <option value="В процесі">В процесі 🛠️</option>
+                    <option value="Критика">Потрібна критика 💬</option>
                 </select>
-                <input type="text" id="collab-title" placeholder="Кого/Що? (напр. Ілюстратора)" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-color); font-size: 14px; outline: none;">
-                <textarea id="collab-text" placeholder="Опишіть деталі проєкту..." rows="4" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-color); font-size: 14px; outline: none; resize: none;"></textarea>
-                <button id="submit-collab-btn" style="background: var(--text-color); color: var(--bg-color); border: none; border-radius: 12px; padding: 12px; font-weight: 600; font-size: 15px; cursor: pointer;">Опублікувати</button>
+                
+                <!-- Textarea з flex: 1 забирає весь вільний простір, але при клавіатурі зменшується і скролиться всередині -->
+                <textarea id="post-text-input" placeholder="Що вас надихає зараз?" style="flex: 1; min-height: 80px; overflow-y: auto; width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-color); font-size: 14px; outline: none; resize: none;"></textarea>
+                
+                <div id="media-preview-container" class="hidden" style="position: relative; margin-top: 5px; flex-shrink: 0;">
+                    <button id="remove-media-btn" class="remove-media-icon" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); border-radius: 50%; border: none; cursor: pointer; color: #fff; font-size: 20px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; z-index: 5;"><i class="bi bi-x"></i></button>
+                    <img id="image-preview" class="hidden" src="" style="width: 100%; border-radius: 12px; max-height: 150px; object-fit: cover; border: 1px solid var(--border-color);">
+                    <video id="video-preview" class="hidden" controls style="width: 100%; border-radius: 12px; max-height: 150px; border: 1px solid var(--border-color);"></video>
+                </div>
+                
+                <!-- Блок кнопок прикріплений до низу (flex-shrink: 0) -->
+                <div style="display: flex; gap: 10px; align-items: center; flex-shrink: 0; margin-top: auto;">
+                    <button id="attach-image-btn" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--text-color); cursor: pointer;"><i class="bi bi-image"></i></button>
+                    <button id="attach-video-btn" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--text-color); cursor: pointer;"><i class="bi bi-camera-video"></i></button>
+                    <button id="submit-post-btn" style="flex: 1; background: var(--text-color); color: var(--bg-color); border: none; border-radius: 12px; height: 44px; font-weight: 600; font-size: 15px; cursor: pointer;">Опублікувати</button>
+                    <input type="file" id="image-input" accept="image/*" hidden>
+                    <input type="file" id="video-input" accept="video/*" hidden>
+                </div>
             </div>
         </div>
 
-        <div id="edit-post-modal" class="popup-modal hidden" style="z-index: 3500; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0, 0, 0, 0.4); display: flex; align-items: flex-end; justify-content: center;">
-            <div class="popup-content" style="width: 100%; max-width: 600px; background: var(--bg-color); border-radius: 24px 24px 0 0; padding: 20px; display: flex; flex-direction: column; gap: 15px; box-shadow: 0 -10px 40px rgba(0,0,0,0.1);">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
+        <!-- 2. РЕДАГУВАННЯ ПОСТУ -->
+        <div id="edit-post-modal" class="popup-modal hidden" style="z-index: 3500; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh; background: rgba(0, 0, 0, 0.4); display: flex; align-items: flex-end; justify-content: center;">
+            <div class="popup-content" style="width: 100%; max-width: 600px; max-height: 85dvh; display: flex; flex-direction: column; background: var(--bg-color); border-radius: 24px 24px 0 0; padding: 20px; gap: 15px; box-shadow: 0 -10px 40px rgba(0,0,0,0.1);">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
                     <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: var(--text-color);">Редагувати запис</h3>
                     <button id="close-edit-post-btn" class="icon-btn" style="margin: 0; padding: 0;"><i class="bi bi-x-lg"></i></button>
                 </div>
-                <textarea id="edit-post-text-input" rows="5" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-color); font-size: 14px; outline: none; resize: none;"></textarea>
-                <button id="submit-edit-post-btn" style="background: var(--text-color); color: var(--bg-color); border: none; border-radius: 12px; padding: 12px; font-weight: 600; font-size: 15px; cursor: pointer;">Зберегти</button>
+                <textarea id="edit-post-text-input" style="flex: 1; min-height: 80px; overflow-y: auto; width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-color); font-size: 14px; outline: none; resize: none;"></textarea>
+                <button id="submit-edit-post-btn" style="background: var(--text-color); color: var(--bg-color); border: none; border-radius: 12px; padding: 12px; font-weight: 600; font-size: 15px; cursor: pointer; flex-shrink: 0; margin-top: auto;">Зберегти</button>
             </div>
         </div>
 
-        <div id="edit-collab-modal" class="popup-modal hidden" style="z-index: 3500; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0, 0, 0, 0.4); display: flex; align-items: center; justify-content: center; backdrop-filter: blur(3px);">
-            <div class="popup-content" style="width: 90%; max-width: 400px; background: var(--bg-color); border-radius: 24px; padding: 20px; display: flex; flex-direction: column; gap: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: var(--text-color);">Редагувати колаборацію</h3>
-                    <button id="close-edit-collab-modal-btn" class="icon-btn" style="margin: 0; padding: 0;"><i class="bi bi-x-lg"></i></button>
+        <!-- 3. СТВОРЕННЯ КОЛАБОРАЦІЇ -->
+        <div id="create-collab-modal" class="popup-modal hidden" style="z-index: 3500; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh; background: rgba(0, 0, 0, 0.4); display: flex; align-items: flex-end; justify-content: center;">
+            <div class="popup-content" style="width: 100%; max-width: 600px; max-height: 85dvh; display: flex; flex-direction: column; background: var(--bg-color); border-radius: 24px 24px 0 0; padding: 20px; gap: 15px; box-shadow: 0 -10px 40px rgba(0,0,0,0.1);">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+                    <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: var(--text-color);">Нова колаборація</h3>
+                    <button id="close-collab-modal-btn" class="icon-btn" style="margin: 0; padding: 0;"><i class="bi bi-x-lg"></i></button>
                 </div>
-                <select id="edit-collab-type" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-color); font-size: 14px; outline: none; cursor: pointer;">
+                <select id="collab-type" style="flex-shrink: 0; width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-color); font-size: 14px; outline: none; cursor: pointer;">
                     <option value="Шукаю">Шукаю в команду</option>
                     <option value="Відкритий">Відкритий(а) до проєктів</option>
                 </select>
-                <input type="text" id="edit-collab-title" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-color); font-size: 14px; outline: none;">
-                <textarea id="edit-collab-text" rows="4" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-color); font-size: 14px; outline: none; resize: none;"></textarea>
-                <button id="submit-edit-collab-btn" style="background: var(--text-color); color: var(--bg-color); border: none; border-radius: 12px; padding: 12px; font-weight: 600; font-size: 15px; cursor: pointer;">Зберегти зміни</button>
+                <input type="text" id="collab-title" placeholder="Кого/Що? (напр. Ілюстратора)" style="flex-shrink: 0; width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-color); font-size: 14px; outline: none;">
+                <textarea id="collab-text" placeholder="Опишіть деталі проєкту..." style="flex: 1; min-height: 80px; overflow-y: auto; width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-color); font-size: 14px; outline: none; resize: none;"></textarea>
+                <button id="submit-collab-btn" style="background: var(--text-color); color: var(--bg-color); border: none; border-radius: 12px; padding: 12px; font-weight: 600; font-size: 15px; cursor: pointer; flex-shrink: 0; margin-top: auto;">Опублікувати</button>
+            </div>
+        </div>
+
+        <!-- 4. РЕДАГУВАННЯ КОЛАБОРАЦІЇ -->
+        <div id="edit-collab-modal" class="popup-modal hidden" style="z-index: 3500; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh; background: rgba(0, 0, 0, 0.4); display: flex; align-items: flex-end; justify-content: center;">
+            <div class="popup-content" style="width: 100%; max-width: 600px; max-height: 85dvh; display: flex; flex-direction: column; background: var(--bg-color); border-radius: 24px 24px 0 0; padding: 20px; gap: 15px; box-shadow: 0 -10px 40px rgba(0,0,0,0.1);">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+                    <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: var(--text-color);">Редагувати колаборацію</h3>
+                    <button id="close-edit-collab-modal-btn" class="icon-btn" style="margin: 0; padding: 0;"><i class="bi bi-x-lg"></i></button>
+                </div>
+                <select id="edit-collab-type" style="flex-shrink: 0; width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-color); font-size: 14px; outline: none; cursor: pointer;">
+                    <option value="Шукаю">Шукаю в команду</option>
+                    <option value="Відкритий">Відкритий(а) до проєктів</option>
+                </select>
+                <input type="text" id="edit-collab-title" style="flex-shrink: 0; width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-color); font-size: 14px; outline: none;">
+                <textarea id="edit-collab-text" style="flex: 1; min-height: 80px; overflow-y: auto; width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-color); font-size: 14px; outline: none; resize: none;"></textarea>
+                <button id="submit-edit-collab-btn" style="background: var(--text-color); color: var(--bg-color); border: none; border-radius: 12px; padding: 12px; font-weight: 600; font-size: 15px; cursor: pointer; flex-shrink: 0; margin-top: auto;">Зберегти зміни</button>
             </div>
         </div>
 
