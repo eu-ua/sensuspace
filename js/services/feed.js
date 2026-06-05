@@ -275,7 +275,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 ` : '';
 
-                // КЛАС user-profile-trigger ПРИБРАНО З ГОЛОВНОГО DIV
                 collabContainer.innerHTML += `
                     <div style="position: relative; min-width: 260px; width: 260px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 20px; padding: 20px; padding-top: 35px; flex-shrink: 0; scroll-snap-align: start; display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.03);">
                         ${collabMenuHtml}
@@ -335,7 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.closest('.delete-post-btn')) {
             e.stopPropagation();
             const postId = e.target.closest('.delete-post-btn').dataset.postId;
-            const confirmed = await window.showCustomModal({ title: "Видалення", message: "Ви впевнені?", type: "confirm" });
+            const confirmed = await window.showCustomModal({ title: "Видалення", message: "Видалити цю публікацію?", type: "confirm" });
             if (confirmed) await deleteDoc(doc(db, "posts", postId));
             return;
         }
@@ -352,9 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        if (e.target.closest('#close-edit-post-btn')) {
-            document.getElementById('edit-post-modal').classList.add('hidden');
-        }
+        if (e.target.closest('#close-edit-post-btn')) document.getElementById('edit-post-modal').classList.add('hidden');
 
         if (e.target.closest('#submit-edit-post-btn')) {
             const newText = document.getElementById('edit-post-text-input').value.trim();
@@ -387,9 +384,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        if (e.target.closest('#close-edit-collab-modal-btn')) {
-            document.getElementById('edit-collab-modal').classList.add('hidden');
-        }
+        if (e.target.closest('#close-edit-collab-modal-btn')) document.getElementById('edit-collab-modal').classList.add('hidden');
 
         if (e.target.closest('#submit-edit-collab-btn')) {
             const btn = document.getElementById('submit-edit-collab-btn');
@@ -510,13 +505,87 @@ document.addEventListener('DOMContentLoaded', () => {
             finally { submitCollabBtn.textContent = "Опублікувати"; submitCollabBtn.disabled = false; }
         }
 
-        // --- 6. ВІДКРИТТЯ ЧУЖОГО ПРОФІЛЮ ---
+        // --- 6. ВІДКРИТТЯ СПИСКІВ ЧИТАЧІВ / ПІДПИСОК ---
+        if (e.target.closest('#my-followers-btn') || e.target.closest('#my-following-btn') || 
+            e.target.closest('#other-followers-btn') || e.target.closest('#other-following-btn')) {
+            
+            const btn = e.target.closest('div[id$="-btn"]');
+            const isFollowers = btn.id.includes('followers');
+            
+            let targetUserId = null;
+            if (btn.id.startsWith('my-')) {
+                const currentUser = auth.currentUser;
+                if (!currentUser) return;
+                targetUserId = currentUser.uid;
+            } else {
+                targetUserId = btn.dataset.userId;
+            }
+
+            if (!targetUserId) return;
+
+            const modal = document.getElementById('users-list-modal');
+            const container = document.getElementById('users-list-container');
+            const title = document.getElementById('users-list-title');
+            
+            if(modal && container && title) {
+                title.textContent = isFollowers ? "Читачі" : "Підписки";
+                container.innerHTML = '<p style="text-align:center; color: var(--text-secondary); margin-top: 20px;">Завантаження...</p>';
+                modal.classList.remove('hidden');
+
+                try {
+                    const userDoc = await getDoc(doc(db, "users", targetUserId));
+                    if (!userDoc.exists()) throw new Error("Користувач не знайдений");
+                    
+                    const uData = userDoc.data();
+                    const list = isFollowers ? (uData.followers || []) : (uData.following || []);
+                    
+                    if (list.length === 0) {
+                        container.innerHTML = '<p style="text-align:center; color: var(--text-secondary); margin-top: 20px;">Список порожній</p>';
+                        return;
+                    }
+
+                    container.innerHTML = '';
+                    for (const uid of list) {
+                        const uDoc = await getDoc(doc(db, "users", uid));
+                        if (uDoc.exists()) {
+                            const d = uDoc.data();
+                            const avatar = d.avatarUrl || DEFAULT_AVATAR;
+                            const name = d.nickname || d.username || d.login || 'Користувач';
+                            
+                            // Додано клас user-profile-trigger! Можна відкрити профіль прямо зі списку.
+                            container.innerHTML += `
+                                <div class="user-profile-trigger" data-user-id="${uid}" style="display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border-color); cursor: pointer;">
+                                    <img src="${avatar}" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover;">
+                                    <span style="margin-left: 12px; font-weight: 600; color: var(--text-color); font-size: 15px;">${name}</span>
+                                </div>
+                            `;
+                        }
+                    }
+                } catch (err) {
+                    console.error(err);
+                    container.innerHTML = '<p style="text-align:center; color: #ff4444; margin-top: 20px;">Помилка завантаження</p>';
+                }
+            }
+            return;
+        }
+
+        if (e.target.closest('#close-users-list-btn')) {
+            const modal = document.getElementById('users-list-modal');
+            if(modal) modal.classList.add('hidden');
+            return;
+        }
+
+        // --- 7. ВІДКРИТТЯ ЧУЖОГО ПРОФІЛЮ ---
         if (e.target.closest('.user-profile-trigger')) {
             e.preventDefault();
             const trigger = e.target.closest('.user-profile-trigger');
             const targetUserId = trigger.getAttribute('data-user-id') || trigger.dataset.userId;
             
             if (!targetUserId) return;
+
+            // Якщо ми переходимо в профіль зі списку читачів - закриваємо список
+            const usersListModal = document.getElementById('users-list-modal');
+            if(usersListModal) usersListModal.classList.add('hidden');
 
             const currentUser = auth.currentUser;
             if (currentUser && targetUserId === currentUser.uid) {
@@ -562,8 +631,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         const bioEl = document.getElementById('other-profile-bio');
                         bioEl.textContent = uData.bio; bioEl.style.display = 'block';
                     }
+                    
+                    // ДОДАЄМО ID ДЛЯ КНОПОК СТАТИСТИКИ
                     document.getElementById('other-followers-count').textContent = (uData.followers || []).length;
                     document.getElementById('other-following-count').textContent = (uData.following || []).length;
+                    document.getElementById('other-followers-btn').dataset.userId = targetUserId;
+                    document.getElementById('other-following-btn').dataset.userId = targetUserId;
                 }
 
                 const postsSnap = await getDocs(query(collection(db, "posts"), orderBy("createdAt", "desc")));
