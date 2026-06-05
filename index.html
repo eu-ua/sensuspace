@@ -242,6 +242,17 @@
             .post-header .post-username { font-size: 14px !important; }
         }
 
+
+        /* Ховаємо повзунок скролу для фільтрів на комп'ютері та телефоні */
+                    .feed-filters::-webkit-scrollbar { display: none; }
+                    /* Стилі для неактивних кнопок */
+                    .feed-filters .space-filter-btn { background: transparent; color: var(--text-secondary); }
+                    /* Стиль для активної кнопки (чорний фон, білий текст) */
+                    .feed-filters .space-filter-btn.active { background: var(--text-color); color: var(--bg-color); }
+    
+                .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+    
     </style>
 </head>
 <body>
@@ -266,14 +277,10 @@
         </div>
 
 
-        <!-- ===================================== -->
-        <!-- 1. НОВА ГОЛОВНА СТОРІНКА: ПРОСТІР -->
-        <!-- ===================================== -->
         <section id="screen-home" class="app-screen active">
-            <!-- Правильне обмеження ширини без здавлювання -->
-            <div style="width: 100%; max-width: 600px; margin: 0 auto; padding-bottom: 85px;">
+            <div class="space-container" style="height: 100%; display: flex; flex-direction: column;">
                 
-                <div class="top-header">
+                <div class="top-header" style="flex-shrink: 0;">
                     <h2>Простір</h2>
                     <div class="header-actions">
                         <button class="icon-btn create-project-trigger"><i class="bi bi-plus-square"></i></button>
@@ -281,65 +288,69 @@
                     </div>
                 </div>
 
-                <div class="space-container">
+                <div class="space-scroll-area" style="flex: 1; overflow-y: auto; padding-bottom: 20px;">
                     
-                    <!-- ПУНКТ 3: Нова кров / Відкриття -->
-                    <div class="space-section">
-                        <div class="section-header">
-                            <h3><i class="bi bi-stars" style="color: #f39c12;"></i> Відкриття дня</h3>
-                            <span>Більше</span>
+                    <div style="margin-top: 15px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 20px; margin-bottom: 16px;">
+                            <h3 style="font-size: 17px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 8px;">✨ Відкриття дня</h3>
+                            <span style="font-size: 13px; color: var(--text-secondary); cursor: pointer; font-weight: 600; transition: 0.2s;">Більше</span>
                         </div>
-                        <div class="h-scroll">
-                            <div class="talent-card">
-                                <img src="https://picsum.photos/100/100?random=1" class="talent-avatar" alt="Avatar">
-                                <span class="talent-name">Олексій М.</span>
+                        
+                        <div class="hide-scroll" style="display: flex; gap: 18px; overflow-x: auto; padding: 0 20px 10px 20px; scroll-behavior: smooth; -webkit-overflow-scrolling: touch;">
+                            <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; flex-shrink: 0; cursor: pointer;">
+                                <div style="width: 68px; height: 68px; border-radius: 50%; border: 2px solid var(--text-color); padding: 3px; display: flex; align-items: center; justify-content: center;">
+                                    <img src="https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+                                </div>
+                                <span style="font-size: 12px; font-weight: 600; color: var(--text-color);">Олексій М.</span>
                             </div>
-                            <div class="talent-card">
-                                <img src="https://picsum.photos/100/100?random=2" class="talent-avatar" alt="Avatar">
-                                <span class="talent-name">Anna Art</span>
+                            <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; flex-shrink: 0; cursor: pointer;">
+                                <div style="width: 68px; height: 68px; border-radius: 50%; border: 2px solid var(--text-color); padding: 3px; display: flex; align-items: center; justify-content: center;">
+                                    <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+                                </div>
+                                <span style="font-size: 12px; font-weight: 600; color: var(--text-color);">Anna Art</span>
                             </div>
-                            <div class="talent-card">
-                                <img src="https://picsum.photos/100/100?random=3" class="talent-avatar" alt="Avatar">
-                                <span class="talent-name">Denis_Dev</span>
+                            <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; flex-shrink: 0; cursor: pointer;">
+                                <div style="width: 68px; height: 68px; border-radius: 50%; border: 2px solid var(--text-color); padding: 3px; display: flex; align-items: center; justify-content: center;">
+                                    <img src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+                                </div>
+                                <span style="font-size: 12px; font-weight: 600; color: var(--text-color);">Denis_Dev</span>
                             </div>
-                            <div class="talent-card">
-                                <img src="https://picsum.photos/100/100?random=4" class="talent-avatar" alt="Avatar">
-                                <span class="talent-name">Lera UI</span>
+                            <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; flex-shrink: 0; cursor: pointer;">
+                                <div style="width: 68px; height: 68px; border-radius: 50%; border: 2px solid var(--text-color); padding: 3px; display: flex; align-items: center; justify-content: center;">
+                                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+                                </div>
+                                <span style="font-size: 12px; font-weight: 600; color: var(--text-color);">Lera UI</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- ПУНКТ 4: Біржа Колаборацій -->
-                    <div class="space-section">
-                        <div class="section-header">
-                            <h3><i class="bi bi-people-fill" style="color: var(--text-color);"></i> Колаборації</h3>
-                            <span>Додати</span>
+                    <div style="margin-top: 25px; margin-bottom: 25px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 20px; margin-bottom: 16px;">
+                            <h3 style="font-size: 17px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 8px;"><i class="bi bi-people-fill" style="font-size: 18px;"></i> Колаборації</h3>
+                            <span style="font-size: 13px; color: var(--text-secondary); cursor: pointer; font-weight: 600; transition: 0.2s;">Додати</span>
                         </div>
-                        <div class="h-scroll">
-                            <div class="collab-card">
-                                <span class="collab-badge">Шукаю ілюстратора</span>
-                                <p class="collab-text">Роблю інді-гру на Unity. Потрібен хтось для створення 2D персонажів у стилі піксель-арт. Пишіть, зробимо шедевр!</p>
-                                <div class="collab-author">
-                                    <img src="https://picsum.photos/50/50?random=5" alt="Avatar">
-                                    <span>GameDev_Alex</span>
+                        
+                        <div class="hide-scroll" style="display: flex; gap: 16px; overflow-x: auto; padding: 0 20px 10px 20px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;">
+                            
+                            <div style="min-width: 260px; width: 260px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 20px; padding: 20px; flex-shrink: 0; scroll-snap-align: start; display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.03); cursor: pointer;">
+                                <span style="background: var(--text-color); color: var(--bg-color); font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 6px 10px; border-radius: 8px; align-self: flex-start; margin-bottom: 14px; letter-spacing: 0.5px;">Шукаю ілюстратора</span>
+                                <p style="font-size: 14px; font-weight: 500; color: var(--text-color); line-height: 1.5; margin: 0 0 20px 0; flex: 1;">Роблю інді-гру на Unity. Потрібен хтось для створення 2D персонажів у стилі піксель-арт. Пишіть, зробимо шедевр!</p>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <img src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">
+                                    <span style="font-size: 13px; color: var(--text-secondary); font-weight: 600;">GameDev_Alex</span>
                                 </div>
                             </div>
-                            <div class="collab-card">
-                                <span class="collab-badge" style="background: transparent; border: 1px solid var(--text-color); color: var(--text-color);">Відкрита до проєктів</span>
-                                <p class="collab-text">Я починаючий копірайтер. З радістю напишу сценарій для вашого відео або текст для дизайну інтерфейсу (безкоштовно для портфоліо).</p>
-                                <div class="collab-author">
-                                    <img src="https://picsum.photos/50/50?random=6" alt="Avatar">
-                                    <span>Maria_Words</span>
+                            
+                            <div style="min-width: 260px; width: 260px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 20px; padding: 20px; flex-shrink: 0; scroll-snap-align: start; display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.03); cursor: pointer;">
+                                <span style="background: transparent; color: var(--text-color); border: 1px solid var(--text-color); font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 5px 9px; border-radius: 8px; align-self: flex-start; margin-bottom: 14px; letter-spacing: 0.5px;">Відкрита до проєктів</span>
+                                <p style="font-size: 14px; font-weight: 500; color: var(--text-color); line-height: 1.5; margin: 0 0 20px 0; flex: 1;">Я починаючий копірайтер. З радістю напишу сценарій для вашого відео або текст для дизайну інтерфейсу (безкоштовно для портфоліо).</p>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">
+                                    <span style="font-size: 13px; color: var(--text-secondary); font-weight: 600;">Maria_Words</span>
                                 </div>
                             </div>
-                        </div>
-                    </div>
 
-                    <!-- ПУНКТ 2: Фільтри процесу -->
-                    <div class="space-filters">
-                        <button class="space-filter-btn active">Всі роботи</button>
-                        <button class="space-filter-btn">В процесі 🛠️</button>
-                        <button class="space-filter-btn">Потрібна критика 💬</button>
+                        </div>
                     </div>
 
                     <!-- ПУНКТ 1: Вітрина робіт -->
@@ -394,11 +405,10 @@
                     </div>
                 </div>
                 
-                <div class="feed-toggle-wrapper">
-                    <div class="feed-toggle">
-                        <button class="toggle-btn active">Підписки</button>
-                        <button class="toggle-btn">Обговорення</button>
-                    </div>
+                <div class="feed-filters" style="padding: 10px 20px 5px 20px; display: flex; gap: 10px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;">
+                    <button class="space-filter-btn active" style="flex-shrink: 0; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 14px; border: none; cursor: pointer; transition: 0.2s;">Всі пости</button>
+                    <button class="space-filter-btn" style="flex-shrink: 0; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 14px; border: none; cursor: pointer; transition: 0.2s;">В процесі 🛠️</button>
+                    <button class="space-filter-btn" style="flex-shrink: 0; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 14px; border: none; cursor: pointer; transition: 0.2s;">Потрібна критика 💬</button>
                 </div>
                 
                 <div class="feed-container">
