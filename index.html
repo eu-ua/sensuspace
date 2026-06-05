@@ -539,7 +539,7 @@
             </div>
         </div>
 
-        <section id="chat-room-modal" class="app-screen hidden" style="overflow: hidden; height: 100vh;">
+        <section id="chat-room-modal" class="app-screen hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100dvh; z-index: 2000; background: var(--bg-color); overflow: hidden;">
             <div class="chat-wrapper" style="display: flex; flex-direction: column; height: 100%; max-width: 600px; margin: 0 auto; background: var(--bg-color);">
                 
                 <div class="chat-header" style="flex-shrink: 0; padding: 15px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); background: var(--bg-color); z-index: 10;">
@@ -579,7 +579,7 @@
                     <button id="chat-remove-media-btn" style="background: none; border: none; color: #888; cursor: pointer; font-size: 20px;"><i class="bi bi-x-circle-fill"></i></button>
                 </div>
 
-                <div class="chat-room-input-area" style="flex-shrink: 0; padding: 10px 15px; display: flex; gap: 10px; align-items: center; border-top: 1px solid var(--border-color); background: var(--bg-color); padding-bottom: max(85px, env(safe-area-inset-bottom));">
+                <div class="chat-room-input-area" style="flex-shrink: 0; padding: 10px 15px; display: flex; gap: 10px; align-items: center; border-top: 1px solid var(--border-color); background: var(--bg-color); padding-bottom: calc(15px + env(safe-area-inset-bottom));">
                     <button id="chat-attach-btn" class="icon-btn" style="font-size: 22px; color: var(--text-secondary); background: none; border: none; cursor: pointer; padding: 0 5px;"><i class="bi bi-paperclip"></i></button>
                     <input type="file" id="chat-media-input" accept="image/*,video/*" hidden>
                     
