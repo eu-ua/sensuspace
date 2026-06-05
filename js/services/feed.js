@@ -1,9 +1,8 @@
 import { db, auth } from '../firebase-config.js';
-import { collection, addDoc, doc, updateDoc, deleteDoc, arrayUnion, arrayRemove, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { collection, addDoc, doc, updateDoc, getDoc, getDocs, setDoc, deleteDoc, query, orderBy, onSnapshot, serverTimestamp, arrayUnion, arrayRemove, increment } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const DEFAULT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='12' fill='%23e0e0e0'/><path d='M12 14c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4zm0-2c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z' fill='%23999999'/></svg>";
 
-// МАГІЯ: Розумний кеш для миттєвого оновлення
 const userCache = {}; 
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -76,9 +75,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 await addDoc(collection(db, "posts"), {
-                    text: text, mediaUrl: mediaUrl, mediaType: mediaType,
+                    text: text, 
+                    mediaUrl: mediaUrl, 
+                    mediaType: mediaType,
                     authorId: user.uid,
-                    createdAt: serverTimestamp(), likedBy: [] 
+                    createdAt: serverTimestamp(), 
+                    reactions: {},
+                    sharesCount: 0 
                 });
 
                 postTextInput.value = '';
@@ -113,49 +116,88 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 const isAuthor = user && post.authorId === user.uid;
-                const likedBy = post.likedBy || []; 
-                const likesCount = likedBy.length;
-                const isLikedByMe = user ? likedBy.includes(user.uid) : false;
-
-                // Використовуємо кеш для миттєвого рендеру без блимання
                 const currentName = userCache[post.authorId]?.name || "...";
                 const currentAvatar = userCache[post.authorId]?.avatar || DEFAULT_AVATAR;
 
+                // 1. Формуємо бульбашки реакцій
+                let reactionsPillsHtml = '';
+                if (post.reactions) {
+                    const currentUserUid = user ? user.uid : null;
+                    
+                    for (const [emoji, usersArray] of Object.entries(post.reactions)) {
+                        if (usersArray && usersArray.length > 0) {
+                            const isMe = currentUserUid && usersArray.includes(currentUserUid);
+                            const activeClass = isMe ? 'reacted-by-me' : '';
+                            
+                            reactionsPillsHtml += `
+                                <span class="reaction-pill ${activeClass}" data-emoji="${emoji}" data-post-id="${postId}">
+                                    ${emoji} ${usersArray.length}
+                                </span>
+                            `;
+                        }
+                    }
+                }
+
+                // 2. Створюємо картку посту
                 const postElement = document.createElement('div');
                 postElement.classList.add('post-card');
                 
                 postElement.innerHTML = `
-                    <div class="post-header">
-                        <div class="avatar-wrapper user-profile-trigger" data-user-id="${post.authorId}" data-user-name="${currentName}" data-user-avatar="${currentAvatar}" style="width: 40px; height: 40px; overflow: hidden; border-radius: 50%; cursor: pointer;">
+                    <div class="post-header" style="display: flex; align-items: center; margin-bottom: 12px;">
+                        
+                        <!-- Аватарка з відступом справа (margin-right: 14px) -->
+                        <div class="avatar-wrapper user-profile-trigger" data-user-id="${post.authorId}" data-user-name="${currentName}" data-user-avatar="${currentAvatar}" style="width: 42px; height: 42px; overflow: hidden; border-radius: 50%; cursor: pointer; flex-shrink: 0; margin-right: 14px;">
                             <img id="feed-avatar-${postId}" src="${currentAvatar}" style="width: 100%; height: 100%; object-fit: cover;" alt="Avatar">
                         </div>
-                        <div class="post-user-info">
-                            <span id="feed-name-${postId}" class="post-username user-profile-trigger" data-user-id="${post.authorId}" data-user-name="${currentName}" data-user-avatar="${currentAvatar}" style="cursor: pointer;">${currentName}</span>
-                            <span class="post-time">${timeString}</span>
+                        
+                        <!-- Блок з іменем та часом (flex: 1 відштовхує кнопку меню вправо) -->
+                        <div class="post-user-info" style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+                            <span id="feed-name-${postId}" class="post-username user-profile-trigger" data-user-id="${post.authorId}" data-user-name="${currentName}" data-user-avatar="${currentAvatar}" style="cursor: pointer; font-size: 15px; font-weight: 600; color: var(--text-color); line-height: 1.2;">${currentName}</span>
+                            <span class="post-time" style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">${timeString}</span>
                         </div>
-                        ${isAuthor ? `<button class="post-menu-btn delete-post-btn"><i class="bi bi-trash" style="color: #ff4444;"></i></button>` : `<button class="post-menu-btn"><i class="bi bi-three-dots"></i></button>`}
+                        
+                        <!-- Кнопка меню / видалення -->
+                        ${isAuthor ? `<button class="post-menu-btn delete-post-btn" style="background: none; border: none; cursor: pointer; padding: 4px;"><i class="bi bi-trash" style="color: #ff4444; font-size: 18px;"></i></button>` : `<button class="post-menu-btn" style="background: none; border: none; cursor: pointer; padding: 4px; color: var(--text-secondary);"><i class="bi bi-three-dots" style="font-size: 18px;"></i></button>`}
+                        
                     </div>
+                    
                     <div class="post-content">${post.text ? `<p class="post-text">${post.text}</p>` : ''}${mediaHTML}</div>
-                    <div class="post-actions">
-                        <button class="action-btn like-btn" data-id="${postId}">
-                            <i class="bi ${isLikedByMe ? 'bi-heart-fill' : 'bi-heart'}" style="${isLikedByMe ? 'color: #ff4444;' : ''}"></i> 
-                            <span class="likes-count">${likesCount}</span>
+                    
+                    <div class="post-bottom-actions">
+                        <div class="reaction-picker-container">
+                            <button class="add-reaction-btn" data-post-id="${postId}"><i class="bi bi-emoji-smile"></i></button>
+                            
+                            <div class="post-reaction-picker hidden" id="picker-${postId}">
+                                <span class="emoji-btn" data-emoji="❤️" data-post-id="${postId}">❤️</span>
+                                <span class="emoji-btn" data-emoji="🔥" data-post-id="${postId}">🔥</span>
+                                <span class="emoji-btn" data-emoji="👏" data-post-id="${postId}">👏</span>
+                                <span class="emoji-btn" data-emoji="💡" data-post-id="${postId}">💡</span>
+                                <span class="emoji-btn" data-emoji="😂" data-post-id="${postId}">😂</span>
+                            </div>
+                        </div>
+
+                        <div class="post-reactions-list" id="reactions-list-${postId}">
+                            ${reactionsPillsHtml}
+                        </div>
+
+                        <button class="action-btn dm-btn" data-post-id="${postId}" data-author-name="${currentName}" data-post-text="${post.text ? post.text.replace(/"/g, '&quot;') : ''}" data-post-media="${post.mediaUrl || ''}" data-post-mediatype="${post.mediaType || ''}" style="margin-left: auto; border: none; background: transparent; color: var(--text-color); cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                            <i class="bi bi-send" style="font-size: 18px;"></i>
+                            <span style="font-size: 14px; font-weight: 600;">${post.sharesCount || 0}</span>
                         </button>
-                        <button class="action-btn dm-btn" data-author-id="${post.authorId}" data-author-name="${currentName}"><i class="bi bi-send"></i></button>
                     </div>
                 `;
-                
+
                 if (isAuthor) {
                     postElement.querySelector('.delete-post-btn').addEventListener('click', async () => {
                         const confirmed = await window.showCustomModal({ title: "Видалення", message: "Ви впевнені?", type: "confirm" });
                         if (confirmed) await deleteDoc(doc(db, "posts", postId));
                     });
                 }
+                
                 feedContainer.appendChild(postElement);
 
-                // ЖИВИЙ РАДАР: Якщо ми ще не слухаємо цього автора - починаємо слухати!
                 if (!userCache[post.authorId]) {
-                    userCache[post.authorId] = { name: "...", avatar: DEFAULT_AVATAR, isListening: true }; // Ставимо заглушку, щоб не плодити радари
+                    userCache[post.authorId] = { name: "...", avatar: DEFAULT_AVATAR, isListening: true };
                     
                     onSnapshot(doc(db, "users", post.authorId), (docSnap) => {
                         if (docSnap.exists()) {
@@ -163,10 +205,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             const displayName = data.nickname || data.username || data.login || (data.email ? data.email.split('@')[0] : "Користувач");
                             const avatar = data.avatarUrl || DEFAULT_AVATAR;
                             
-                            // Оновлюємо глобальний кеш
                             userCache[post.authorId] = { name: displayName, avatar: avatar, isListening: true };
                             
-                            // МИТТЄВО змінюємо аватарки в усіх постах цього автора
                             document.querySelectorAll(`.user-profile-trigger[data-user-id="${post.authorId}"] img`).forEach(img => {
                                 if (img.id && img.id.startsWith('feed-avatar-')) {
                                     img.src = avatar;
@@ -175,16 +215,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                 }
                             });
                             
-                            // МИТТЄВО змінюємо імена
                             document.querySelectorAll(`.post-username[data-user-id="${post.authorId}"]`).forEach(span => {
                                 span.textContent = displayName;
                                 span.dataset.userName = displayName;
                                 span.dataset.userAvatar = avatar;
-                            });
-                            
-                            // Оновлюємо ім'я для кнопки чату
-                            document.querySelectorAll(`.dm-btn[data-author-id="${post.authorId}"]`).forEach(btn => {
-                                btn.dataset.authorName = displayName;
                             });
                         }
                     });
@@ -193,41 +227,176 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // =================================================================
+    // ГЛОБАЛЬНИЙ ОБРОБНИК КЛІКІВ (РЕАКЦІЇ + ПОШИРЕННЯ)
+    // =================================================================
     document.addEventListener('click', async (e) => {
-        const profileTrigger = e.target.closest('.user-profile-trigger');
-        if (profileTrigger) {
-            e.stopPropagation();
-            const userId = profileTrigger.dataset.userId;
-            if (!userId) return;
-
-            if (auth.currentUser && userId === auth.currentUser.uid) {
-                document.querySelector('.nav-btn[data-screen="screen-profile"]')?.click();
-            } else {
-                if (window.openOtherProfile) window.openOtherProfile(userId, { nickname: profileTrigger.dataset.userName, avatarUrl: profileTrigger.dataset.userAvatar });
-            }
+        
+        // 1. Відкриття/закриття меню смайликів
+        if (e.target.closest('.add-reaction-btn')) {
+            const btn = e.target.closest('.add-reaction-btn');
+            const postId = btn.dataset.postId;
+            const picker = document.getElementById(`picker-${postId}`);
+            
+            document.querySelectorAll('.post-reaction-picker').forEach(p => {
+                if (p !== picker) p.classList.add('hidden');
+            });
+            
+            picker.classList.toggle('hidden');
             return;
         }
 
-        const likeBtn = e.target.closest('.like-btn');
-        if (likeBtn) {
-            const user = auth.currentUser;
-            if (!user) { await window.showCustomModal({ title: "Увага", message: "Увійдіть для вподобань." }); return; }
-            const postRef = doc(db, "posts", likeBtn.dataset.id);
-            const icon = likeBtn.querySelector('i');
-            const countSpan = likeBtn.querySelector('.likes-count');
-            let currentCount = parseInt(countSpan.textContent) || 0;
-            if (icon.classList.contains('bi-heart-fill')) {
-                icon.classList.replace('bi-heart-fill', 'bi-heart'); icon.style.color = ''; countSpan.textContent = currentCount - 1;
-                await updateDoc(postRef, { likedBy: arrayRemove(user.uid) });
-            } else {
-                icon.classList.replace('bi-heart', 'bi-heart-fill'); icon.style.color = '#ff4444'; countSpan.textContent = currentCount + 1;
-                await updateDoc(postRef, { likedBy: arrayUnion(user.uid) });
-            }
+        // 2. Сховати меню реакцій
+        if (!e.target.closest('.reaction-picker-container')) {
+            document.querySelectorAll('.post-reaction-picker').forEach(p => p.classList.add('hidden'));
+        }
+
+        // 3. Клік по самому емодзі
+        if (e.target.classList.contains('emoji-btn') || e.target.closest('.reaction-pill')) {
+            const currentUser = auth.currentUser;
+            if (!currentUser) return alert("Потрібно увійти, щоб залишати реакції!");
+
+            let target = e.target.classList.contains('emoji-btn') ? e.target : e.target.closest('.reaction-pill');
+            const emoji = target.dataset.emoji;
+            const postId = target.dataset.postId;
+
+            document.querySelectorAll('.post-reaction-picker').forEach(p => p.classList.add('hidden'));
+
+            try {
+                const postRef = doc(db, "posts", postId);
+                const postSnap = await getDoc(postRef);
+                if (!postSnap.exists()) return;
+
+                const postData = postSnap.data();
+                const reactions = postData.reactions || {};
+                const usersWhoReactedWithThisEmoji = reactions[emoji] || [];
+                const hasReacted = usersWhoReactedWithThisEmoji.includes(currentUser.uid);
+                
+                await updateDoc(postRef, {
+                    [`reactions.${emoji}`]: hasReacted ? arrayRemove(currentUser.uid) : arrayUnion(currentUser.uid)
+                });
+            } catch (error) { console.error("Помилка реакції:", error); }
+        }
+
+        // 4. КЛІК ПО КНОПЦІ "ПОДІЛИТИСЯ" (Відкриває модальне вікно)
+        if (e.target.closest('.dm-btn')) {
+            const btn = e.target.closest('.dm-btn');
+            const currentUser = auth.currentUser;
+            if (!currentUser) { alert("Увійдіть, щоб ділитися публікаціями."); return; }
+
+            // Зберігаємо дані поста глобально для вікна поширення
+            window.currentSharePostData = {
+                id: btn.dataset.postId,
+                authorName: btn.dataset.authorName,
+                text: btn.dataset.postText,
+                mediaUrl: btn.dataset.postMedia,
+                mediaType: btn.dataset.postMediatype
+            };
+
+            const shareModal = document.getElementById('share-post-modal');
+            const friendsContainer = document.getElementById('share-friends-container');
+            friendsContainer.innerHTML = '<p style="text-align:center; font-size: 13px; color: #888;">Завантаження...</p>';
+            shareModal.classList.remove('hidden');
+
+            try {
+                const myDoc = await getDoc(doc(db, "users", currentUser.uid));
+                const following = myDoc.data()?.following || [];
+                
+                friendsContainer.innerHTML = '';
+                
+                if (following.length === 0) {
+                    friendsContainer.innerHTML = '<p style="text-align:center; font-size: 13px; color: #888; margin-top: 10px;">Ви ще ні на кого не підписані</p>';
+                } else {
+                    const usersSnap = await getDocs(collection(db, "users"));
+                    usersSnap.forEach(uSnap => {
+                        if (following.includes(uSnap.id)) {
+                            const u = uSnap.data();
+                            const avatar = u.avatarUrl || DEFAULT_AVATAR;
+                            const name = u.nickname || u.username || u.login || 'Користувач';
+                            
+                            const friendCard = document.createElement('div');
+                            friendCard.style.display = 'flex';
+                            friendCard.style.alignItems = 'center';
+                            friendCard.style.padding = '12px 0';
+                            friendCard.style.borderBottom = '1px solid var(--border-color)';
+                            
+                            friendCard.innerHTML = `
+                                <img src="${avatar}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-color);">
+                                <div style="flex: 1; margin-left: 14px;">
+                                    <h4 style="font-size: 16px; font-weight: 600; color: var(--text-color); margin: 0;">${name}</h4>
+                                </div>
+                                <button class="send-share-btn" data-target-uid="${uSnap.id}" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; padding: 6px 14px; font-size: 13px; font-weight: 600; color: var(--text-color); cursor: pointer; transition: 0.2s;">Надіслати</button>
+                            `;
+                            friendsContainer.appendChild(friendCard);
+                        }
+                    });
+                }
+            } catch (err) { console.error(err); }
             return;
         }
 
-        const dmBtn = e.target.closest('.dm-btn');
-        if (dmBtn && window.openChatWithUser) window.openChatWithUser(dmBtn.dataset.authorId, dmBtn.dataset.authorName, null);
+        // 5. КЛІК ПО "НАДІСЛАТИ" у вікні (Тільки друзям)
+        if (e.target.closest('.send-share-btn')) {
+            const currentUser = auth.currentUser;
+            if (!currentUser || !window.currentSharePostData) return;
+
+            const btn = e.target.closest('button');
+            const targetUid = btn.dataset.targetUid;
+            
+            const roomId = currentUser.uid < targetUid ? `${currentUser.uid}_${targetUid}` : `${targetUid}_${currentUser.uid}`;
+            const postData = window.currentSharePostData;
+
+            // Змінюємо вигляд кнопки для ефекту "успіху"
+            btn.textContent = "Надіслано!";
+            btn.style.background = "var(--text-color)";
+            btn.style.color = "var(--bg-color)";
+            btn.disabled = true;
+
+            try {
+                let msgText = `📌 Публікація від ${postData.authorName}`;
+                if (postData.text) {
+                    const snippet = postData.text.length > 80 ? postData.text.substring(0, 80) + '...' : postData.text;
+                    msgText += `:\n"${snippet}"`;
+                }
+
+                // 1. Надсилаємо як повідомлення у відповідний чат
+                await addDoc(collection(db, "chats", roomId, "messages"), {
+                    senderId: currentUser.uid,
+                    text: msgText,
+                    mediaUrl: postData.mediaUrl || null,
+                    mediaType: postData.mediaType || null,
+                    timestamp: serverTimestamp()
+                });
+
+                // 2. Оновлюємо статус самого чату в списку чатів
+                await setDoc(doc(db, "chats", roomId), {
+                    participants: [currentUser.uid, targetUid],
+                    lastMessage: "📌 Поширена публікація",
+                    timestamp: serverTimestamp()
+                }, { merge: true });
+
+                // 3. ЗБІЛЬШУЄМО ЛІЧИЛЬНИК ПОШИРЕНЬ У ПОСТІ НА +1
+                await updateDoc(doc(db, "posts", postData.id), {
+                    sharesCount: increment(1)
+                });
+
+                setTimeout(() => {
+                    document.getElementById('share-post-modal').classList.add('hidden');
+                    btn.textContent = "Надіслати";
+                    btn.style.background = "";
+                    btn.style.color = "";
+                    btn.disabled = false;
+                }, 800);
+
+            } catch (err) {
+                console.error(err);
+                btn.textContent = "Помилка";
+            }
+        }
+
+        // 6. Закриття вікна поширення
+        if (e.target.closest('#close-share-modal-btn') || e.target.id === 'share-post-modal') {
+            document.getElementById('share-post-modal').classList.add('hidden');
+        }
     });
-
 });
