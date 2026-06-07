@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Sensu Space</title>
+    <title>Bublic</title>
     
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%2250%25%22 x=%2250%25%22 dominant-baseline=%22central%22 text-anchor=%22middle%22 font-size=%2280%22>🍩</text></svg>">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     
     <link rel="stylesheet" href="css/style.css">
@@ -17,19 +18,15 @@
 
     <style>
         .post-media, .post-card img { width: 100% !important; height: auto !important; max-height: 85vh !important; object-fit: contain !important; border-radius: 12px; }
-
         #chat-action-preview-container.hidden, #chat-media-preview-container.hidden, #chat-search-bar.hidden, .reaction-picker.hidden { display: none !important; }
 
         .chat-wrapper { width: 100%; max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; height: 100%; }
         #chat-messages-container { flex: 1; overflow-y: auto; padding: 20px 15px; display: flex; flex-direction: column; gap: 12px; }
         .chat-message { max-width: 78%; padding: 12px 18px; font-size: 15px; line-height: 1.4; word-wrap: break-word; display: flex; flex-direction: column; position: relative; }
-        
         .chat-message.sent { align-self: flex-end; background-color: #2D2D2D !important; color: #E0E0E0 !important; border-radius: 24px 24px 6px 24px; }
         .chat-message.received { align-self: flex-start; background-color: #E0E0E0 !important; color: #121212 !important; border: none; border-radius: 24px 24px 24px 6px; }
-        
         [data-theme="light"] .chat-message.sent { background-color: #EAEAEA !important; color: #1A1A1A !important; }
         [data-theme="light"] .chat-message.received { background-color: #1A1A1A !important; color: #F8F9FA !important; }
-        
         .chat-message-time { font-size: 11px; margin-top: 4px; font-weight: 500; }
         .chat-message.sent .chat-message-time { align-self: flex-end; opacity: 0.6; }
         .chat-message.received .chat-message-time { align-self: flex-start; opacity: 0.5; }
@@ -39,7 +36,6 @@
         .chat-room-input-area input:focus { border: 1px solid #555; }
         .chat-room-input-area button { background: transparent; color: var(--text-color); border: none; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 22px; cursor: pointer; transition: transform 0.1s; }
         .chat-room-input-area button:active { transform: scale(0.9); }
-
         [data-theme="light"] .chat-room-input-area { border-top: 1px solid #EAEAEA; }
         [data-theme="light"] .chat-room-input-area input { background-color: #F0F0F0; color: #1A1A1A; }
         [data-theme="light"] .chat-room-input-area input:focus { border: 1px solid #CCC; }
@@ -51,40 +47,28 @@
         .chat-info { flex: 1; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
         .chat-name { font-weight: 600; font-size: 16px; color: var(--text-color); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .chat-last-message { font-size: 13px; color: #888; margin: 0; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        
         [data-theme="light"] .chat-item { background: #F8F9FA !important; border: 1px solid #EAEAEA; }
         [data-theme="light"] .chat-item:hover { background: #EAEAEA !important; }
-
-        #chat-action-preview-container, #chat-media-preview-container, #chat-search-bar { background-color: #1E1E1E; border-color: #2D2D2D; }
-        #chat-inner-search-input { background-color: #121212 !important; color: var(--text-color) !important; border-color: #333 !important; }
-        
-        [data-theme="light"] #chat-action-preview-container, [data-theme="light"] #chat-media-preview-container, [data-theme="light"] #chat-search-bar { background-color: #F8F9FA; border-color: #EAEAEA; }
-        [data-theme="light"] #chat-inner-search-input { background-color: #FFFFFF !important; border-color: #DDD !important; color: #1A1A1A !important; }
-
-        .msg-actions { position: absolute; top: 50%; transform: translateY(-50%); display: flex; align-items: center; z-index: 10; }
-        .chat-message.sent .msg-actions { left: -36px; }
-        .chat-message.received .msg-actions { right: -36px; }
-        .chat-message .react-btn { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); opacity: 0; pointer-events: none; transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.1); padding: 0; }
-        .chat-message:hover .react-btn { opacity: 1; pointer-events: auto; }
-        
-        #chat-context-menu { position: fixed; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); display: flex; flex-direction: column; overflow: hidden; z-index: 9999; min-width: 160px; padding: 5px 0; }
-        #chat-context-menu button { background: none; border: none; padding: 12px 16px; text-align: left; color: var(--text-primary); cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 12px; transition: background 0.2s; }
-        #chat-context-menu button:hover { background: var(--border-color); }
 
         .space-container { padding-bottom: 20px; background: var(--bg-color); }
         .hide-scroll::-webkit-scrollbar { display: none; }
         .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
 
-        .clean-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 0 15px 15px 15px; }
-        .clean-card { position: relative; aspect-ratio: 4/5; border-radius: 16px; overflow: hidden; background: var(--bg-secondary); cursor: pointer; }
-        .clean-card img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
-        .clean-card:hover img { transform: scale(1.05); }
-        .clean-card-overlay { position: absolute; bottom: 0; left: 0; width: 100%; background: linear-gradient(transparent, rgba(0,0,0,0.8)); padding: 30px 12px 12px 12px; display: flex; align-items: center; gap: 8px; }
-        .clean-card-overlay img { width: 24px; height: 24px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.5); }
-        .clean-card-overlay span { color: #fff; font-size: 12px; font-weight: 600; text-shadow: 0 1px 4px rgba(0,0,0,0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    
-        .post-media, .post-card img { width: 100% !important; height: auto !important; max-height: none !important; object-fit: contain !important; border-radius: 16px !important; border: 1px solid var(--border-color); background-color: transparent !important; }
-    
+        /* ================================================= */
+        /* ДИЗАЙН СТРІЧКИ ЯК У THREADS                       */
+        /* ================================================= */
+        .feed-container, .profile-feed { padding-top: 10px; }
+        
+        .post-card {
+            border-bottom: 1px solid var(--border-color); /* Тонка лінія знизу */
+            padding-bottom: 16px; 
+            margin-bottom: 16px; 
+            background: transparent;
+            border-radius: 0;
+            box-shadow: none;
+        }
+        .post-card:last-child { border-bottom: none; }
+
         .post-bottom-actions { display: flex; gap: 12px; align-items: center; margin-top: 12px; }
         .add-reaction-btn { background: none; border: none; font-size: 22px; color: var(--text-secondary); cursor: pointer; padding: 0; transition: transform 0.1s; display: flex; align-items: center; }
         .add-reaction-btn:active { transform: scale(0.9); }
@@ -92,35 +76,40 @@
         .post-reaction-picker { position: absolute; bottom: 35px; left: -10px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 20px; padding: 8px 12px; display: flex; gap: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); z-index: 100; }
         .post-reaction-picker .emoji-btn { font-size: 22px; cursor: pointer; transition: transform 0.1s; user-select: none; }
         .post-reaction-picker .emoji-btn:hover { transform: scale(1.2); }
+        
         .post-reactions-list { display: flex; gap: 8px; flex-wrap: wrap; flex: 1; }
         .reaction-pill { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 16px; padding: 4px 10px; font-size: 13px; display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 600; color: var(--text-color); transition: background 0.2s; user-select: none; }
-        .reaction-pill.reacted-by-me { background: var(--text-color) !important; color: var(--bg-color) !important; border-color: var(--text-color) !important; }
+        
+        /* ПУНКТ 8: Тільки жирне обведення для реакцій */
+        .reaction-pill.reacted-by-me { background: transparent !important; color: var(--text-color) !important; border: 2px solid var(--text-color) !important; font-weight: 800 !important; }
+
+        /* ================================================= */
+        /* ВКЛАДКИ З ТОНКОЮ ЛІНІЄЮ (ПУНКТ 4)                 */
+        /* ================================================= */
+        .profile-tabs-container { display: flex; width: 100%; border-bottom: 1px solid var(--border-color); position: relative; }
+        .profile-tab-btn { flex: 1; padding: 14px 5px; background: none; border: none; font-weight: 600; font-size: 14px; color: var(--text-secondary); cursor: pointer; position: relative; display: flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
+        .profile-tab-btn.active { color: var(--text-color); font-weight: 800; }
+        .profile-tab-btn.active::after { content: ''; position: absolute; bottom: -1px; left: 0; width: 100%; height: 2px; background-color: var(--text-color); z-index: 2; }
+
+        .modal-tabs-container { display: flex; width: 100%; border-bottom: 1px solid var(--border-color); margin-bottom: 10px; position: relative; }
+        .modal-tab-btn { flex: 1; padding: 12px 5px; background: none; border: none; font-weight: 600; font-size: 15px; color: var(--text-secondary); cursor: pointer; position: relative; }
+        .modal-tab-btn.active { color: var(--text-color); font-weight: 800; }
+        .modal-tab-btn.active::after { content: ''; position: absolute; bottom: -1px; left: 0; width: 100%; height: 2px; background-color: var(--text-color); z-index: 2; }
 
         @media (max-width: 600px) {
             .chat-wrapper, .other-profile-wrapper, section > div[style*="max-width: 600px"] { max-width: 100% !important; width: 100% !important; border-radius: 0 !important; border: none !important; }
             .bottom-nav { padding-bottom: env(safe-area-inset-bottom) !important; }
             .chat-room-input-area { padding-bottom: calc(10px + env(safe-area-inset-bottom)) !important; }
-            .feed-container, .space-container, #chat-messages-container, .profile-grid { padding-bottom: calc(85px + env(safe-area-inset-bottom)) !important; }
+            .feed-container, .space-container, #chat-messages-container, .profile-feed { padding-bottom: calc(85px + env(safe-area-inset-bottom)) !important; }
             
-            /* ЦЕНТРУВАННЯ ТА АНІМАЦІЯ ВІКОН НА ТЕЛЕФОНІ */
             .popup-modal { align-items: center !important; justify-content: center !important; padding: 15px !important; }
-            .popup-content { 
-                width: 100% !important; 
-                max-width: 400px !important; 
-                border-radius: 24px !important; /* Усі кути круглі */
-                margin: auto !important; 
-                padding-bottom: 20px !important; 
-                animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
-                max-height: 85vh !important; 
-                max-height: 85dvh !important; 
-                display: flex !important; 
-                flex-direction: column !important; 
-            }
+            .popup-content { width: 100% !important; max-width: 400px !important; border-radius: 24px !important; margin: auto !important; padding-bottom: 20px !important; animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; max-height: 85vh !important; max-height: 85dvh !important; display: flex !important; flex-direction: column !important; }
             @keyframes popIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
             
             .top-header h2 { font-size: 22px !important; }
             .post-text { font-size: 14px !important; }
             .post-header .post-username { font-size: 14px !important; }
+            .profile-tab-btn { font-size: 12px; } 
         }
 
         .feed-filters::-webkit-scrollbar { display: none; }
@@ -131,11 +120,10 @@
 <body>
 
     <div id="app">
-        
         <div id="auth-modal" class="auth-modal-overlay hidden">
             <div class="auth-container">
                 <button id="close-auth-btn" class="close-modal-btn"><i class="bi bi-x-lg"></i></button>
-                <div class="auth-header-brand"><h2>Sensu</h2><p>Простір для творців</p></div>
+                <div class="auth-header-brand"><h2>Bublic</h2><p>Простір для творців</p></div>
                 <div class="auth-tabs">
                     <button class="auth-tab-btn active" id="tab-login">Вхід</button>
                     <button class="auth-tab-btn" id="tab-register">Реєстрація</button>
@@ -151,7 +139,6 @@
 
         <section id="screen-home" class="app-screen active">
             <div class="space-container" style="width: 100%; max-width: 600px; margin: 0 auto; height: 100%; display: flex; flex-direction: column;">
-                
                 <div style="flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; width: 100%; box-sizing: border-box;">
                     <h2 style="margin: 0; font-size: 24px; font-weight: 700; text-align: left; color: var(--text-color);">Простір</h2>
                     <div style="display: flex; gap: 15px; align-items: center;">
@@ -161,7 +148,6 @@
                 </div>
 
                 <div class="space-scroll-area" style="flex: 1; overflow-y: auto; padding-bottom: 85px;">
-                    
                     <div style="margin-top: 15px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 20px; margin-bottom: 16px;">
                             <h3 style="font-size: 17px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 8px;">✨ Відкриття дня</h3>
@@ -184,10 +170,9 @@
                         <button class="space-filter-btn" style="flex-shrink: 0; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 14px; border: none; cursor: pointer; transition: 0.2s;">Потрібна критика 💬</button>
                     </div>
 
-                    <div class="feed-container" style="padding-top: 10px;">
-                        <p style="text-align:center; color: var(--text-secondary); margin-top: 40px; padding: 0 20px;">Завантаження...</p>
+                    <div class="feed-container" style="padding: 0 20px; padding-top: 15px;">
+                        <p style="text-align:center; color: var(--text-secondary); margin-top: 40px;">Завантаження...</p>
                     </div>
-
                 </div>
             </div>
         </section>
@@ -210,26 +195,55 @@
         </section>
 
         <section id="screen-profile" class="app-screen hidden">
-            <div class="profile-top-bar">
-                <button class="icon-btn create-post-trigger"><i class="bi bi-plus-square"></i></button>
-                <button class="icon-btn" id="open-settings-btn"><i class="bi bi-three-dots"></i></button>
-            </div>
-            <div class="profile-header">
-                <div class="avatar-wrapper cursor-pointer">
-                    <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='12' fill='%23e0e0e0'/><path d='M12 14c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4zm0-2c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z' fill='%23999999'/></svg>" class="profile-main-avatar">
-                    <div class="edit-badge"><i class="bi bi-pencil-fill"></i></div>
+            <div style="width: 100%; max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; min-height: 100vh; background: var(--bg-color);">
+                
+                <div style="display: flex; justify-content: flex-end; padding: 15px;">
+                    <button class="icon-btn" id="open-settings-btn" style="margin: 0; padding: 0; font-size: 24px; color: var(--text-color);"><i class="bi bi-list"></i></button>
                 </div>
-                <div class="profile-info">
-                    <h3 class="profile-nickname cursor-pointer">... <i class="bi bi-pencil edit-icon"></i></h3>
-                    <div class="profile-stats">
-                        <div class="stat-item cursor-pointer" id="my-followers-btn"><span class="stat-number" id="my-followers-count">0</span><span class="stat-label">читачів</span></div>
-                        <div class="stat-item cursor-pointer" id="my-following-btn"><span class="stat-number" id="my-following-count">0</span><span class="stat-label">підписок</span></div>
+
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; padding: 0 15px; margin-bottom: 20px;">
+                    <div style="flex: 1; padding-right: 15px;">
+                        <h2 id="my-profile-fullname" style="margin: 0; font-size: 24px; font-weight: 800; color: var(--text-color); line-height: 1.2;">Завантаження...</h2>
+                        <p id="my-profile-login" style="margin: 4px 0 12px 0; font-size: 15px; font-weight: 600; color: var(--text-secondary); display: none;">@login</p>
+                        <p id="my-profile-bio" style="margin: 0 0 12px 0; font-size: 15px; color: var(--text-color); line-height: 1.4; white-space: pre-wrap;"></p>
+                        
+                        <div id="my-followers-btn" style="display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+                            <span id="my-followers-count" style="font-weight: 700; font-size: 15px; color: var(--text-color);">0</span>
+                            <span style="color: var(--text-secondary); font-size: 15px;">читачів</span>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; flex-shrink: 0; padding-top: 5px;">
+                        <div style="width: 80px; height: 80px; border-radius: 50%; overflow: hidden; border: 1px solid var(--border-color);">
+                            <img id="my-profile-avatar" src="" style="width: 100%; height: 100%; object-fit: cover;">
+                        </div>
+                        <div id="my-profile-collab-badge" class="hidden" style="background: var(--text-color); color: var(--bg-color); font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 6px 10px; border-radius: 8px; text-align: center; max-width: 130px; white-space: normal; line-height: 1.3; word-wrap: break-word;"></div>
                     </div>
                 </div>
+
+                <div style="padding: 0 15px; margin-bottom: 20px;">
+                    <button id="open-edit-profile-btn" style="width: 100%; padding: 10px; border-radius: 12px; background: var(--text-color); border: 1px solid var(--text-color); color: var(--bg-color); font-weight: 700; font-size: 15px; cursor: pointer; transition: 0.2s;">Редагувати профіль</button>
+                </div>
+
+                <div class="profile-tabs-container">
+                    <div style="flex: 1; display: flex; justify-content: center; position: relative;">
+                        <button id="profile-tab-all" class="profile-tab-btn active" style="width: 100%;">
+                            <span id="profile-tab-all-text">Усе</span> <i class="bi bi-chevron-down" style="font-size: 12px; font-weight: 900; margin-left: 2px;"></i>
+                        </button>
+                        <div id="profile-all-dropdown" class="hidden" style="position: absolute; top: 100%; left: 0; width: 100%; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 0 0 12px 12px; padding: 5px; z-index: 100; box-shadow: 0 8px 24px rgba(0,0,0,0.15);">
+                            <button class="dropdown-item" style="width: 100%; text-align: left; padding: 12px 10px; background: none; border: none; color: var(--text-color); font-weight: 600; font-size: 14px; cursor: pointer; border-radius: 8px;">Популярне</button>
+                            <button class="dropdown-item" style="width: 100%; text-align: left; padding: 12px 10px; background: none; border: none; color: var(--text-secondary); font-weight: 600; font-size: 14px; cursor: pointer; border-radius: 8px;">Змішане</button>
+                        </div>
+                    </div>
+                    <button class="profile-tab-btn">Проєкти</button>
+                    <button class="profile-tab-btn">Відповіді</button>
+                    <button id="profile-tab-3" class="profile-tab-btn">Збережене</button>
+                </div>
+
+                <div id="my-profile-feed" class="profile-feed" style="padding: 15px 20px 85px 20px;">
+                    <p style="text-align:center; color: var(--text-secondary); margin-top: 40px;">Немає публікацій</p>
+                </div>
             </div>
-            <p class="profile-bio cursor-pointer">... <i class="bi bi-pencil edit-icon"></i></p>
-            <div class="profile-tabs"><button class="p-tab-btn active"><i class="bi bi-grid-3x3"></i> Публікації</button></div>
-            <div class="profile-grid"></div>
         </section>
 
         <nav class="bottom-nav">
@@ -267,73 +281,16 @@
             </div>
         </div>
 
-        <section id="chat-room-modal" class="app-screen hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100dvh; z-index: 2000; background: var(--bg-color); overflow: hidden;">
-            <div class="chat-wrapper" style="display: flex; flex-direction: column; height: 100%; max-width: 600px; margin: 0 auto; background: var(--bg-color);">
-                <div class="chat-header" style="flex-shrink: 0; padding: 15px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); background: var(--bg-color); z-index: 10;">
-                    <div style="display: flex; align-items: center; gap: 15px;">
-                        <button id="close-chat-room-btn" class="icon-btn"><i class="bi bi-arrow-left"></i></button>
-                        <img id="chat-room-avatar" src="" style="width: 35px; height: 35px; border-radius: 50%; object-fit: cover;">
-                        <h3 id="chat-room-name" style="margin: 0; font-size: 16px;">Ім'я</h3>
-                    </div>
-                    <button id="chat-search-btn" class="icon-btn" style="color: var(--text-primary);"><i class="bi bi-search"></i></button>
-                </div>
-                <div id="chat-search-bar" class="hidden" style="padding: 10px 15px; background: var(--bg-color);">
-                    <input type="text" id="chat-inner-search-input" placeholder="Пошук повідомлень..." autocomplete="off" style="width: 100%; padding: 10px 18px; border-radius: 20px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); outline: none; font-size: 14px;">
-                </div>
-                <div id="chat-messages-container" style="flex-grow: 1; overflow-y: auto; padding: 20px 15px; display: flex; flex-direction: column; gap: 16px; background: var(--bg-color);"></div>
-                <div class="chat-room-input-area" style="flex-shrink: 0; padding: 10px 15px; display: flex; gap: 10px; align-items: center; border-top: 1px solid var(--border-color); background: var(--bg-color); padding-bottom: calc(15px + env(safe-area-inset-bottom));">
-                    <button id="chat-attach-btn" class="icon-btn" style="font-size: 22px; color: var(--text-secondary); background: none; border: none; cursor: pointer; padding: 0 5px;"><i class="bi bi-paperclip"></i></button>
-                    <input type="file" id="chat-media-input" accept="image/*,video/*" hidden>
-                    <input type="text" id="chat-message-input" placeholder="Написати..." autocomplete="off" style="flex: 1; background-color: var(--bg-secondary); border: none; border-radius: 24px; padding: 14px 20px; color: var(--text-primary); outline: none; font-size: 15px;">
-                    <button id="send-message-btn" style="background: transparent; color: var(--text-primary); border: none; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 22px; cursor: pointer; transition: 0.2s;"><i class="bi bi-send-fill"></i></button>
-                </div>
-            </div>
-        </section>
-
-        <div id="other-user-profile-modal" class="hidden" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100dvh; z-index: 9999; background: var(--bg-color); overflow-y: auto;">
-            <div class="other-profile-wrapper" style="width: 100%; max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; min-height: 100%;">
-                <div style="display: flex; justify-content: space-between; padding: 15px; position: sticky; top: 0; background: var(--bg-color); z-index: 10; border-bottom: 1px solid var(--border-color);">
-                    <button id="close-other-profile-btn" class="icon-btn" style="margin: 0; padding: 0; font-size: 24px;"><i class="bi bi-arrow-left"></i></button>
-                </div>
-                <div style="display: flex; align-items: center; gap: 20px; padding: 0 15px; margin-top: 15px;">
-                    <div style="width: 80px; height: 80px; border-radius: 50%; overflow: hidden; flex-shrink: 0; border: 1px solid var(--border-color);">
-                        <img id="other-profile-avatar" src="" style="width: 100%; height: 100%; object-fit: cover;" alt="Avatar">
-                    </div>
-                    <div style="display: flex; flex-direction: column; gap: 5px; text-align: left;">
-                        <h3 id="other-profile-nickname" style="font-size: 20px; font-weight: 700; margin: 0; color: var(--text-color);"></h3>
-                        <div style="display: flex; gap: 20px;">
-                            <div id="other-followers-btn" style="display: flex; flex-direction: column; align-items: flex-start; cursor: pointer;">
-                                <span id="other-followers-count" style="font-size: 16px; font-weight: 700; color: var(--text-color);">0</span>
-                                <span style="font-size: 13px; color: var(--text-secondary, #888);">читачів</span>
-                            </div>
-                            <div id="other-following-btn" style="display: flex; flex-direction: column; align-items: flex-start; cursor: pointer;">
-                                <span id="other-following-count" style="font-size: 16px; font-weight: 700; color: var(--text-color);">0</span>
-                                <span style="font-size: 13px; color: var(--text-secondary, #888);">підписок</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <p id="other-profile-bio" style="font-size: 14px; margin: 15px 15px 0 15px; color: var(--text-color); white-space: pre-wrap; line-height: 1.4; display: none; text-align: left;"></p>
-                <div style="display: flex; gap: 10px; padding: 15px; margin-top: 10px;">
-                    <button id="follow-user-btn" style="flex: 1; padding: 8px; border-radius: 8px; font-weight: 600; font-size: 14px; border: none; cursor: pointer; transition: 0.2s; background: var(--text-color); color: var(--bg-color);">Підписатися</button>
-                    <button id="message-user-btn" style="flex: 1; padding: 8px; border-radius: 8px; font-weight: 600; font-size: 14px; border: 1px solid var(--border-color, #ccc); cursor: pointer; transition: 0.2s; background: transparent; color: var(--text-color);">Написати</button>
-                </div>
-                <div style="display: flex; justify-content: center; border-top: 1px solid var(--border-color); margin-top: 5px;">
-                    <button style="width: 50%; padding: 12px 0; border: none; border-top: 1px solid var(--text-color); background: none; color: var(--text-color); font-size: 14px; font-weight: 600; margin-top: -1px; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: default;">
-                        <i class="bi bi-grid-3x3" style="font-size: 18px;"></i> Публікації
-                    </button>
-                </div>
-                <div id="other-profile-grid" class="profile-grid" style="flex: 1; padding-bottom: 85px;"></div>
-            </div>
-        </div>
-
         <div id="users-list-modal" class="popup-modal hidden" style="z-index: 10000; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0, 0, 0, 0.4); display: flex; align-items: center; justify-content: center; padding: 15px; box-sizing: border-box; backdrop-filter: blur(3px);">
-            <div class="popup-content" style="width: 100%; max-width: 400px; max-height: 85dvh; display: flex; flex-direction: column; background: var(--bg-color); border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
-                <div class="popup-header" style="flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border-color);">
-                    <h3 id="users-list-title" style="margin: 0; font-size: 18px; font-weight: 700; color: var(--text-color);">Список</h3>
+            <div class="popup-content" style="width: 100%; max-width: 400px; max-height: 85dvh; display: flex; flex-direction: column; background: var(--bg-color); border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); padding: 15px 20px;">
+                <div style="display: flex; justify-content: flex-end; margin-bottom: -10px; z-index: 10;">
                     <button id="close-users-list-btn" class="icon-btn" style="color: var(--text-color); margin: 0; padding: 0; font-size: 20px;"><i class="bi bi-x-lg"></i></button>
                 </div>
-                <div id="users-list-container" style="flex: 1; overflow-y: auto; padding: 10px 20px 20px 20px; display: flex; flex-direction: column; gap: 4px;"></div>
+                <div class="modal-tabs-container">
+                    <button id="modal-tab-followers" class="modal-tab-btn active">Читачі <span id="modal-count-followers" style="font-size: 13px; color: var(--text-secondary); font-weight: normal;"></span></button>
+                    <button id="modal-tab-following" class="modal-tab-btn">Відстежуються <span id="modal-count-following" style="font-size: 13px; color: var(--text-secondary); font-weight: normal;"></span></button>
+                </div>
+                <div id="users-list-container" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 4px;"></div>
             </div>
         </div>
 
@@ -351,26 +308,21 @@
 
         <div id="create-post-modal" class="popup-modal hidden" style="z-index: 3500; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh; background: rgba(0, 0, 0, 0.4); display: flex; align-items: center; justify-content: center; padding: 15px; box-sizing: border-box;">
             <div class="popup-content" style="width: 100%; max-width: 500px; max-height: 85dvh; display: flex; flex-direction: column; background: var(--bg-color); border-radius: 24px; padding: 20px; gap: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); box-sizing: border-box;">
-                
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
                     <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: var(--text-color);">Новий запис</h3>
                     <button id="close-create-post-btn" class="icon-btn" style="margin: 0; padding: 0; color: var(--text-secondary);"><i class="bi bi-x-lg"></i></button>
                 </div>
-                
                 <select id="post-category-select" style="flex-shrink: 0; width: 100%; padding: 12px 15px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); font-size: 14px; font-weight: 600; outline: none; cursor: pointer; -webkit-appearance: none; appearance: none;">
                     <option value="Всі">Звичайний запис</option>
                     <option value="В процесі">В процесі 🛠️</option>
                     <option value="Критика">Потрібна критика 💬</option>
                 </select>
-                
                 <textarea id="post-text-input" placeholder="Що вас надихає зараз?" style="flex: 1; min-height: 80px; overflow-y: auto; width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-color); font-size: 14px; outline: none; resize: none; box-sizing: border-box;"></textarea>
-                
                 <div id="media-preview-container" class="hidden" style="position: relative; margin-top: 5px; flex-shrink: 0;">
                     <button id="remove-media-btn" class="remove-media-icon" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); border-radius: 50%; border: none; cursor: pointer; color: #fff; font-size: 20px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; z-index: 5;"><i class="bi bi-x"></i></button>
                     <img id="image-preview" class="hidden" src="" style="width: 100%; border-radius: 12px; max-height: 150px; object-fit: cover; border: 1px solid var(--border-color);">
                     <video id="video-preview" class="hidden" controls style="width: 100%; border-radius: 12px; max-height: 150px; border: 1px solid var(--border-color);"></video>
                 </div>
-                
                 <div style="display: flex; gap: 10px; align-items: center; flex-shrink: 0; margin-top: auto;">
                     <button id="attach-image-btn" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--text-color); cursor: pointer;"><i class="bi bi-image"></i></button>
                     <button id="attach-video-btn" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--text-color); cursor: pointer;"><i class="bi bi-camera-video"></i></button>
@@ -424,10 +376,39 @@
             </div>
         </div>
 
+        <div id="edit-my-profile-modal" class="popup-modal hidden" style="z-index: 4000; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh; background: rgba(0, 0, 0, 0.4); display: flex; align-items: center; justify-content: center; padding: 15px; box-sizing: border-box;">
+            <div class="popup-content" style="width: 100%; max-width: 500px; max-height: 85dvh; display: flex; flex-direction: column; background: var(--bg-color); border-radius: 24px; padding: 20px; gap: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); box-sizing: border-box;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+                    <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: var(--text-color);">Редагувати профіль</h3>
+                    <button id="close-edit-my-profile-btn" class="icon-btn" style="margin: 0; padding: 0; color: var(--text-secondary);"><i class="bi bi-x-lg"></i></button>
+                </div>
+                
+                <div style="overflow-y: auto; display: flex; flex-direction: column; gap: 15px; padding-bottom: 10px;">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <img id="edit-profile-avatar-preview" src="" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-color);">
+                        <button id="change-avatar-btn" style="background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-color); font-weight: 600; padding: 8px 12px; border-radius: 12px; cursor: pointer; font-size: 13px;">Змінити фото</button>
+                        <input type="file" id="edit-avatar-input" accept="image/*" hidden>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="edit-firstname" placeholder="Ім'я" style="flex: 1; padding: 14px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-color); font-size: 15px; outline: none;">
+                        <input type="text" id="edit-lastname" placeholder="Прізвище" style="flex: 1; padding: 14px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-color); font-size: 15px; outline: none;">
+                    </div>
+                    <textarea id="edit-bio" placeholder="Розкажіть про себе..." rows="4" style="width: 100%; padding: 14px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-color); font-size: 15px; outline: none; resize: none;"></textarea>
+                    
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--bg-secondary); border-radius: 12px; border: 1px solid var(--border-color);">
+                        <span style="font-size: 14px; font-weight: 600; color: var(--text-color);">Назва 3-ї вкладки:</span>
+                        <select id="edit-tab-name" style="background: transparent; border: none; font-size: 14px; font-weight: 700; color: var(--text-primary); outline: none; cursor: pointer;">
+                            <option value="Збережене">Збережене</option>
+                            <option value="Репости">Репости</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button id="save-my-profile-btn" style="background: var(--text-color); color: var(--bg-color); border: none; border-radius: 12px; padding: 14px; font-weight: 700; font-size: 16px; cursor: pointer; flex-shrink: 0; margin-top: auto;">Зберегти зміни</button>
+            </div>
+        </div>
+
     </div>
-
-    <div id="chat-context-menu" class="hidden"></div>
-
     <script type="module" src="js/app.js"></script>
 </body>
 </html>
