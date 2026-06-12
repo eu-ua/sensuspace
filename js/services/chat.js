@@ -4,6 +4,9 @@ import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/fi
 
 const DEFAULT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='12' fill='%23e0e0e0'/><path d='M12 14c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4zm0-2c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z' fill='%23999999'/></svg>";
 
+// Звук нового повідомлення
+const messageSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
+
 document.addEventListener('DOMContentLoaded', () => {
 
     const chatRoomModal = document.getElementById('chat-room-modal');
@@ -34,10 +37,31 @@ document.addEventListener('DOMContentLoaded', () => {
     let editingMessageId = null; 
     let replyingToMessage = null; 
 
+    // Функція оновлення бейджа на навігації
+    function updateNavBadge(count) {
+        const navBtn = document.querySelector('.nav-btn[data-screen="screen-messages"]');
+        if (navBtn) {
+            let badge = navBtn.querySelector('.notif-badge');
+            if (count > 0) {
+                if (!badge) {
+                    navBtn.style.position = 'relative';
+                    badge = document.createElement('div');
+                    badge.className = 'notif-badge';
+                    badge.style = 'position:absolute; top:2px; right:8px; background:#ff4444; color:#fff; font-size:10px; font-weight:bold; width:16px; height:16px; border-radius:50%; display:flex; align-items:center; justify-content:center; border: 2px solid var(--bg-color); pointer-events: none;';
+                    navBtn.appendChild(badge);
+                }
+                badge.textContent = count > 9 ? '9+' : count;
+            } else if (badge) {
+                badge.remove();
+            }
+        }
+    }
+
     if (closeChatRoomBtn) closeChatRoomBtn.addEventListener('click', () => {
         document.querySelector('.nav-btn.active')?.click(); 
         if (chatUnsubscribe) chatUnsubscribe(); 
         if (chatHeaderUnsubscribe) chatHeaderUnsubscribe();
+        window.currentChatRoomId = null;
     });
 
     if (chatCancelActionBtn) {
@@ -98,6 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         currentChatUserId = targetUserId;
         const roomId = getChatRoomId(currentUser.uid, targetUserId);
+        window.currentChatRoomId = roomId;
         
         const chatRoomNameEl = document.getElementById('chat-room-name');
         const chatRoomAvatarEl = document.getElementById('chat-room-avatar');
@@ -118,6 +143,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 chatRoomAvatarEl.src = data.avatarUrl || DEFAULT_AVATAR;
             }
         });
+
+        // Позначаємо чат як ПРОЧИТАНИЙ при відкритті
+        await updateDoc(doc(db, "chats", roomId), {
+            [`readStatus.${currentUser.uid}`]: true
+        }).catch(()=>{});
 
         if (chatSearchBar) chatSearchBar.classList.add('hidden');
         if (chatInnerSearchInput) chatInnerSearchInput.value = '';
@@ -162,7 +192,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     const senderNameStr = isMine ? 'Ви' : document.getElementById('chat-room-name').textContent;
                     const safeTextStr = (msgData.text || 'Фото').replace(/"/g, '&quot;');
 
-                    // Залишаємо ТІЛЬКИ кнопку реакції (і ту ховаємо через CSS до наведення)
                     let actionsHtml = `
                         <div class="msg-actions">
                             <button class="react-btn"><i class="bi bi-emoji-smile"></i></button>
@@ -187,21 +216,19 @@ document.addEventListener('DOMContentLoaded', () => {
                         msgDiv.style.removeProperty('background-color'); msgDiv.style.removeProperty('padding'); msgDiv.style.removeProperty('border');
                     }
 
-                    // ЛОГІКА КОНТЕКСТНОГО МЕНЮ (Правий клік / Довге натискання)
                     msgDiv.addEventListener('contextmenu', (e) => {
                         e.preventDefault(); 
                         
                         const ctxMenu = document.getElementById('chat-context-menu');
                         if(!ctxMenu) return;
                         
-                        ctxMenu.innerHTML = ''; // Очищаємо старі кнопки
+                        ctxMenu.innerHTML = ''; 
                         
                         const now = Date.now();
                         const msgTime = msgData.timestamp ? msgData.timestamp.toMillis() : now;
                         const diffMinutes = (now - msgTime) / (1000 * 60);
-                        const isEditable = isMine && msgData.text && diffMinutes <= 30; // Перевірка на 30 хвилин
+                        const isEditable = isMine && msgData.text && diffMinutes <= 30;
 
-                        // Кнопка ВІДПОВІСТИ
                         const btnReply = document.createElement('button');
                         btnReply.innerHTML = '<i class="bi bi-reply"></i> Відповісти';
                         btnReply.onclick = () => {
@@ -215,7 +242,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         };
                         ctxMenu.appendChild(btnReply);
 
-                        // Кнопка РЕДАГУВАТИ (Тільки свої + до 30 хв)
                         if (isEditable) {
                             const btnEdit = document.createElement('button');
                             btnEdit.innerHTML = '<i class="bi bi-pencil"></i> Редагувати';
@@ -229,7 +255,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             ctxMenu.appendChild(btnEdit);
                         }
 
-                        // Кнопка ВИДАЛИТИ (Тільки свої)
                         if (isMine) {
                             const btnDel = document.createElement('button');
                             btnDel.innerHTML = '<i class="bi bi-trash"></i> Видалити';
@@ -242,7 +267,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             ctxMenu.appendChild(btnDel);
                         }
 
-                        // Розумне позиціонування меню (щоб не вилазило за екран)
                         let x = e.clientX;
                         let y = e.clientY;
                         if (x + 160 > window.innerWidth) x -= 160;
@@ -253,7 +277,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         ctxMenu.classList.remove('hidden');
                     });
 
-                    // Реакції
                     const reactBtn = msgDiv.querySelector('.react-btn');
                     const reactionPicker = msgDiv.querySelector('.reaction-picker');
                     if (reactBtn && reactionPicker) {
@@ -283,6 +306,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (msgElement) msgElement.remove();
                 }
             });
+
+            // Якщо ми в чаті і приходить нове повідомлення - позначаємо прочитаним одразу
+            if (!snapshot.empty) {
+                const lastDoc = snapshot.docs[snapshot.docs.length - 1].data();
+                if (lastDoc.senderId !== currentUser.uid) {
+                    updateDoc(doc(db, "chats", window.currentChatRoomId), {
+                        [`readStatus.${currentUser.uid}`]: true
+                    }).catch(()=>{});
+                }
+            }
         });
     };
 
@@ -306,18 +339,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     document.addEventListener('click', (e) => {
-        // Закриваємо емодзі-меню
         if (!e.target.closest('.reaction-picker') && !e.target.closest('.react-btn')) {
             document.querySelectorAll('.reaction-picker').forEach(p => p.classList.add('hidden'));
         }
 
-        // Закриваємо КОНТЕКСТНЕ МЕНЮ
         const ctxMenu = document.getElementById('chat-context-menu');
         if (ctxMenu && !ctxMenu.classList.contains('hidden')) {
             ctxMenu.classList.add('hidden');
         }
 
-        // Закриваємо пошук у списку чатів
         if (chatSearchContainer && !chatSearchContainer.classList.contains('hidden')) {
             if (!chatSearchContainer.contains(e.target) && (!openChatListSearchBtn || !openChatListSearchBtn.contains(e.target)) && (!followersResults || !followersResults.contains(e.target))) {
                 chatSearchContainer.classList.add('hidden');
@@ -329,7 +359,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Закриваємо пошук ВСЕРЕДИНІ чату
         if (chatSearchBar && !chatSearchBar.classList.contains('hidden')) {
             if (!chatSearchBar.contains(e.target) && (!chatSearchBtn || !chatSearchBtn.contains(e.target))) {
                 chatSearchBar.classList.add('hidden');
@@ -383,9 +412,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             await addDoc(collection(db, "chats", roomId, "messages"), msgPayload);
 
+            // Оновлюємо статус: Я прочитав, Співрозмовник - ні
             await setDoc(doc(db, "chats", roomId), {
                 participants: [currentUser.uid, currentChatUserId],
                 lastMessage: text || (mediaType === 'image' ? "📷 Фото" : "🎥 Відео"),
+                lastMessageSenderId: currentUser.uid,
+                [`readStatus.${currentChatUserId}`]: false,
+                [`readStatus.${currentUser.uid}`]: true,
                 timestamp: serverTimestamp()
             }, { merge: true });
 
@@ -408,7 +441,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (sendMessageBtn) sendMessageBtn.addEventListener('click', sendMessage);
     if (chatMessageInput) chatMessageInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
-
 
     if (followersSearchInput && followersResults) {
         followersSearchInput.addEventListener('input', async (e) => {
@@ -477,6 +509,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const dynamicChatList = document.getElementById('dynamic-chat-list');
     const localUserCache = {}; 
+    let initialChatLoad = true;
 
     if (dynamicChatList) {
         onAuthStateChanged(auth, (user) => {
@@ -485,20 +518,39 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 onSnapshot(qChats, async (snapshot) => {
                     dynamicChatList.innerHTML = ''; 
+                    let unreadTotalCount = 0;
+                    let playSound = false;
                     
                     if (snapshot.empty) { 
                         dynamicChatList.innerHTML = '<div style="text-align:center; padding: 40px 20px;"><i class="bi bi-chat-dots" style="font-size: 40px; color: var(--text-secondary); opacity: 0.5;"></i><p style="color: var(--text-secondary); margin-top: 15px; font-size: 15px;">Тут з\'являться ваші діалоги.<br>Натисніть на лупу, щоб знайти друзів.</p></div>'; 
+                        updateNavBadge(0);
                         return; 
                     }
                     
                     let chatsArray = [];
                     snapshot.forEach(docSnap => chatsArray.push({ id: docSnap.id, ...docSnap.data() }));
                     chatsArray.sort((a, b) => (b.timestamp?.toMillis() || 0) - (a.timestamp?.toMillis() || 0));
+
+                    // Перевіряємо, чи потрібно програвати звук нового повідомлення
+                    snapshot.docChanges().forEach(change => {
+                        if (change.type === 'modified' || change.type === 'added') {
+                            const d = change.doc.data();
+                            if (d.readStatus && d.readStatus[user.uid] === false && d.lastMessageSenderId !== user.uid) {
+                                // Якщо повідомлення нове (не старіше 10 сек) і це не перше завантаження
+                                if (!initialChatLoad && d.timestamp && (Date.now() - d.timestamp.toMillis() < 10000)) {
+                                    playSound = true;
+                                }
+                            }
+                        }
+                    });
                     
                     for (const chatData of chatsArray) {
                         if (!chatData.participants) continue;
                         const otherUserId = chatData.participants.find(id => id !== user.uid);
                         if (!otherUserId) continue;
+
+                        const isUnread = chatData.readStatus && chatData.readStatus[user.uid] === false && chatData.lastMessageSenderId !== user.uid;
+                        if (isUnread) unreadTotalCount++;
 
                         if (!localUserCache[otherUserId]) {
                             const otherUserSnap = await getDoc(doc(db, "users", otherUserId));
@@ -510,15 +562,21 @@ document.addEventListener('DOMContentLoaded', () => {
                         const name = uData.nickname || uData.username || uData.login || "Користувач";
                         const lastMsg = chatData.lastMessage || '...';
                         
+                        // Червона крапка непрочитаного повідомлення (маркер)
+                        const unreadDot = isUnread ? `<div style="position: absolute; left: 40px; top: 0px; width: 12px; height: 12px; background: #ff4444; border: 2px solid var(--bg-color); border-radius: 50%; z-index: 5;"></div>` : '';
+
                         const chatItem = document.createElement('div');
                         chatItem.className = 'chat-item';
                         chatItem.style.position = 'relative'; 
                         
                         chatItem.innerHTML = `
-                            <img src="${avatar}" class="chat-avatar" alt="Avatar">
+                            <div style="position:relative; width: 50px; height: 50px; flex-shrink: 0;">
+                                <img src="${avatar}" class="chat-avatar" alt="Avatar" style="width: 100%; height: 100%; margin:0;">
+                                ${unreadDot}
+                            </div>
                             <div class="chat-info" style="flex: 1; min-width: 0; padding-right: 30px;">
-                                <h4 class="chat-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name}</h4>
-                                <p class="chat-last-message" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${lastMsg}</p>
+                                <h4 class="chat-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: ${isUnread ? '800' : '600'}; color: var(--text-color);">${name}</h4>
+                                <p class="chat-last-message" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: ${isUnread ? 'var(--text-color)' : 'var(--text-secondary)'}; font-weight: ${isUnread ? '600' : '400'};">${lastMsg}</p>
                             </div>
                             <button class="delete-chat-btn" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #ff4444; font-size: 18px; cursor: pointer; opacity: 0.7; padding: 10px; z-index: 10;"><i class="bi bi-trash"></i></button>
                         `;
@@ -534,6 +592,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         
                         dynamicChatList.appendChild(chatItem);
                     }
+
+                    if (playSound) messageSound.play().catch(e => console.log(e));
+                    initialChatLoad = false;
+                    
+                    updateNavBadge(unreadTotalCount);
                 });
             }
         });

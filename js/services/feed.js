@@ -748,7 +748,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 text: `Стрічка контенту: Посилання на пост ID #${pId}`, senderId: user.uid, timestamp: serverTimestamp()
             });
             await setDoc(doc(db, "chats", roomId), {
-                participants: [user.uid, targetUid], lastMessage: "🔗 Поділився(лась) публікацією", timestamp: serverTimestamp()
+                participants: [user.uid, targetUid], 
+                lastMessage: "🔗 Поділився(лась) публікацією", 
+                lastMessageSenderId: user.uid,
+                [`readStatus.${targetUid}`]: false,
+                [`readStatus.${user.uid}`]: true,
+                timestamp: serverTimestamp()
             }, { merge: true });
 
             await updateDoc(doc(db, "posts", pId), { sharesCount: increment(1), sharedBy: arrayUnion(user.uid) });
