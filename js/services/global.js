@@ -1,286 +1,360 @@
 import { db, auth } from '../firebase-config.js';
-import { collection, doc, setDoc, getDoc, arrayUnion, arrayRemove, query, orderBy, onSnapshot, where } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { collection, doc, setDoc, getDoc, arrayUnion, arrayRemove, query, orderBy, onSnapshot, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const DEFAULT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='12' fill='%23e0e0e0'/><path d='M12 14c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4zm0-2c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z' fill='%23999999'/></svg>";
 
-document.addEventListener('DOMContentLoaded', () => {
+window.currentViewedUserId = null;
+let otherProfileUnsub = null;
+let otherPostsUnsub = null;
 
-    const globalSearchInput = document.querySelector('.global-search-input');
-    const globalContentArea = document.querySelector('.global-content-area');
-    const otherProfileModal = document.getElementById('other-user-profile-modal');
-    const closeOtherProfileBtn = document.getElementById('close-other-profile-btn');
-    const followBtn = document.getElementById('follow-user-btn');
-    const messageUserBtn = document.getElementById('message-user-btn');
+let otherProfileName = "Завантаження...";
+let otherProfileAvatar = DEFAULT_AVATAR;
+
+window.renderUsersListInModal = async (userId, type) => {
+    const container = document.getElementById('users-list-container');
+    if(!container) return;
+    container.innerHTML = '<p style="text-align:center; color: var(--text-secondary); margin-top: 20px;">Завантаження...</p>';
     
-    let currentViewedUserId = null;
-    let otherProfileUnsubscribe = null;
-    let otherProfilePostsUnsubscribe = null;
-
-    let currentOtherFollowers = [];
-    let currentOtherFollowing = [];
-
-    let allUsers = [];
-    let currentSearchQuery = "";
-
-    const usersListModal = document.getElementById('users-list-modal');
-    const closeUsersListBtn = document.getElementById('close-users-list-btn');
-    const usersListTitle = document.getElementById('users-list-title');
-    const usersListContainer = document.getElementById('users-list-container');
-
-    onSnapshot(collection(db, "users"), (snapshot) => {
-        allUsers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        if (currentSearchQuery) renderSearchResults();
-    });
-
-    if (globalSearchInput && globalContentArea) {
-        globalSearchInput.addEventListener('input', (e) => {
-            currentSearchQuery = e.target.value.toLowerCase().trim();
-            renderSearchResults();
-        });
-    }
-
-    function renderSearchResults() {
-        if (!currentSearchQuery) { 
-            globalContentArea.innerHTML = '<p style="text-align:center; color: var(--text-secondary); margin-top: 20px;">Введіть ім\'я для пошуку...</p>'; 
-            return; 
-        }
+    try {
+        const userDoc = await getDoc(doc(db, "users", userId));
+        if (!userDoc.exists()) throw new Error("Користувач не знайдений");
+        const data = userDoc.data();
         
-        globalContentArea.innerHTML = ''; 
-        let found = false;
-        
-        allUsers.forEach(data => {
-            const searchName = (data.nickname || data.username || data.login || "").toLowerCase();
-            
-            if (searchName.includes(currentSearchQuery) && data.id !== auth.currentUser?.uid) {
-                found = true;
-                const avatar = data.avatarUrl || DEFAULT_AVATAR;
-                const card = document.createElement('div');
-                card.className = 'search-user-card';
-                const displayName = data.nickname || data.username || data.login || '...';
-                
-                card.innerHTML = `<img src="${avatar}" alt="user"><div class="search-user-info"><h4>${displayName}</h4><p>${data.bio ? data.bio.substring(0, 30) + '...' : 'Новий учасник платформи'}</p></div>`;
-                card.addEventListener('click', () => window.openOtherProfile(data.id, { nickname: displayName, avatarUrl: avatar }));
-                
-                globalContentArea.appendChild(card);
-            }
-        });
-        
-        if (!found) globalContentArea.innerHTML = '<p style="text-align:center; color: var(--text-secondary); margin-top: 20px;">Нікого не знайдено :(</p>';
-    }
+        const fEl = document.getElementById('modal-count-followers');
+        if(fEl) fEl.textContent = (data.followers || []).length;
+        const flEl = document.getElementById('modal-count-following');
+        if(flEl) flEl.textContent = (data.following || []).length;
 
-    // ==========================================
-    // ЛОГІКА СПИСКУ ПІДПИСНИКІВ
-    // ==========================================
-    if (closeUsersListBtn) {
-        closeUsersListBtn.addEventListener('click', () => usersListModal.classList.add('hidden'));
-    }
-
-    if (usersListModal) {
-        usersListModal.addEventListener('click', (e) => {
-            if (e.target === usersListModal) {
-                usersListModal.classList.add('hidden');
-            }
-        });
-    }
-
-    window.openUsersList = (title, userIdsArray) => {
-        if (!usersListModal) return;
-        usersListTitle.textContent = title;
-        usersListContainer.innerHTML = '';
-
-        if (!userIdsArray || userIdsArray.length === 0) {
-            usersListContainer.innerHTML = '<p style="text-align:center; color: var(--text-secondary); margin: 30px 0;">Поки що нікого немає</p>';
-            usersListModal.classList.remove('hidden');
+        const list = type === 'followers' ? (data.followers || []) : (data.following || []);
+        if (list.length === 0) {
+            container.innerHTML = '<p style="text-align:center; color: var(--text-secondary); margin-top: 20px;">Список порожній</p>';
             return;
         }
-
-        let found = false;
-        allUsers.forEach(u => {
-            if (userIdsArray.includes(u.id)) {
-                found = true;
-                const avatar = u.avatarUrl || DEFAULT_AVATAR;
-                const displayName = u.nickname || u.username || u.login || 'Користувач';
-                
-                const card = document.createElement('div');
-                card.style.display = 'flex';
-                card.style.alignItems = 'center';
-                card.style.padding = '12px 0';
-                card.style.borderBottom = '1px solid var(--border-color)';
-                card.style.cursor = 'pointer';
-                
-                // ОНОВЛЕНИЙ МІНІМАЛІСТИЧНИЙ ДИЗАЙН КАРТКИ
-                card.innerHTML = `
-                    <img src="${avatar}" alt="Avatar" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid var(--border-color);">
-                    <div style="flex: 1; margin-left: 14px; overflow: hidden; display: flex; flex-direction: column; justify-content: center;">
-                        <h4 style="font-size: 16px; font-weight: 600; color: var(--text-color); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${displayName}</h4>
-                        ${u.bio ? `<p style="font-size: 13px; color: var(--text-secondary); margin: 2px 0 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${u.bio.substring(0, 30)}...</p>` : ''}
+        container.innerHTML = '';
+        for (const uid of list) {
+            const uDoc = await getDoc(doc(db, "users", uid));
+            if (uDoc.exists()) {
+                const d = uDoc.data();
+                const avatar = d.avatarUrl || DEFAULT_AVATAR;
+                const name = d.nickname || d.username || d.login || 'Користувач';
+                container.innerHTML += `
+                    <div class="user-profile-trigger" data-user-id="${uid}" style="display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border-color); cursor: pointer;">
+                        <img src="${avatar}" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover;">
+                        <span style="margin-left: 12px; font-weight: 600; color: var(--text-color); font-size: 15px;">${name}</span>
                     </div>
                 `;
-                
-                card.addEventListener('click', () => {
-                    usersListModal.classList.add('hidden');
-                    if (auth.currentUser && u.id === auth.currentUser.uid) {
-                        document.querySelector('.nav-btn[data-screen="screen-profile"]')?.click();
-                    } else {
-                        window.openOtherProfile(u.id, { nickname: displayName, avatarUrl: avatar });
-                    }
-                });
-                usersListContainer.appendChild(card);
             }
-        });
-
-        if (!found) {
-            usersListContainer.innerHTML = '<p style="text-align:center; color: var(--text-secondary); margin: 30px 0;">Користувачів не знайдено</p>';
         }
+    } catch (err) { container.innerHTML = '<p style="text-align:center; color: #ff4444;">Помилка</p>'; }
+};
 
-        usersListModal.classList.remove('hidden');
-    };
+window.openOtherProfile = async (userId, initialData = {}) => {
+    if (document.getElementById('chat-room-modal') && !document.getElementById('chat-room-modal').classList.contains('hidden')) {
+        window.previousScreenForProfile = 'chat-room-modal';
+    } else {
+        window.previousScreenForProfile = 'main';
+    }
 
-    document.getElementById('other-followers-btn')?.addEventListener('click', () => {
-        window.openUsersList('Читачі', currentOtherFollowers);
-    });
-    document.getElementById('other-following-btn')?.addEventListener('click', () => {
-        window.openUsersList('Підписки', currentOtherFollowing);
-    });
+    window.currentViewedUserId = userId;
+    
+    document.getElementById('users-list-modal')?.classList.add('hidden');
+    document.querySelectorAll('.app-screen').forEach(s => s.classList.add('hidden'));
+    
+    const modal = document.getElementById('other-user-profile-modal');
+    if(!modal) return;
+    modal.classList.remove('hidden'); 
+    modal.style.display = 'block';
 
-    document.getElementById('my-followers-btn')?.addEventListener('click', () => {
-        if (!auth.currentUser) return;
-        const me = allUsers.find(u => u.id === auth.currentUser.uid);
-        if (me) window.openUsersList('Мої читачі', me.followers || []);
-    });
-    document.getElementById('my-following-btn')?.addEventListener('click', () => {
-        if (!auth.currentUser) return;
-        const me = allUsers.find(u => u.id === auth.currentUser.uid);
-        if (me) window.openUsersList('Мої підписки', me.following || []);
-    });
+    otherProfileName = initialData.nickname || "Завантаження...";
+    otherProfileAvatar = initialData.avatarUrl || DEFAULT_AVATAR;
 
-
-    // ==========================================
-    // ЛОГІКА ВІДКРИТТЯ ПРОФІЛЮ
-    // ==========================================
-    if (closeOtherProfileBtn) {
-        closeOtherProfileBtn.addEventListener('click', () => {
-            if(otherProfileUnsubscribe) otherProfileUnsubscribe();
-            if(otherProfilePostsUnsubscribe) otherProfilePostsUnsubscribe();
+    if(otherProfileUnsub) otherProfileUnsub();
+    otherProfileUnsub = onSnapshot(doc(db, "users", userId), (docSnap) => {
+        if (docSnap.exists()) {
+            const data = docSnap.data();
             
-            if (window.previousScreenForProfile === 'chat-room-modal') {
-                document.querySelectorAll('.app-screen').forEach(s => { s.classList.remove('active'); s.classList.add('hidden'); });
-                document.getElementById('chat-room-modal').classList.add('active');
-                document.getElementById('chat-room-modal').classList.remove('hidden');
+            if (data.firstName || data.lastName) {
+                otherProfileName = `${data.firstName || ''} ${data.lastName || ''}`.trim();
             } else {
-                document.querySelector('.nav-btn.active')?.click();
+                otherProfileName = data.login || data.username || 'Творець';
             }
-            window.previousScreenForProfile = null;
-        });
-    }
+            otherProfileAvatar = data.avatarUrl || DEFAULT_AVATAR;
 
-    window.openOtherProfile = async (userId, initialData = {}) => {
-        if (document.getElementById('chat-room-modal') && !document.getElementById('chat-room-modal').classList.contains('hidden')) {
-            window.previousScreenForProfile = 'chat-room-modal';
-        } else {
-            window.previousScreenForProfile = 'main';
-        }
+            const nameEl = document.getElementById('other-profile-fullname');
+            if(nameEl) nameEl.textContent = otherProfileName;
 
-        currentViewedUserId = userId;
-        document.querySelectorAll('.app-screen').forEach(s => { s.classList.remove('active'); s.classList.add('hidden'); });
-        otherProfileModal.classList.add('active');
-        otherProfileModal.classList.remove('hidden');
-
-        document.getElementById('other-profile-avatar').src = initialData.avatarUrl || DEFAULT_AVATAR;
-        document.getElementById('other-profile-nickname').textContent = initialData.nickname || "...";
-        
-        const initBio = initialData.bio ? initialData.bio.trim() : "";
-        document.getElementById('other-profile-bio').textContent = initBio;
-        document.getElementById('other-profile-bio').style.display = initBio ? 'block' : 'none';
-
-        document.getElementById('other-followers-count').textContent = (initialData.followers || []).length;
-        document.getElementById('other-following-count').textContent = (initialData.following || []).length;
-        currentOtherFollowers = initialData.followers || [];
-        currentOtherFollowing = initialData.following || [];
-        
-        const grid = document.getElementById('other-profile-grid');
-        grid.innerHTML = '<p style="text-align:center; grid-column:1/-1;">Завантаження...</p>';
-        
-        if (otherProfileUnsubscribe) otherProfileUnsubscribe();
-        otherProfileUnsubscribe = onSnapshot(doc(db, "users", userId), (docSnap) => {
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                document.getElementById('other-profile-avatar').src = data.avatarUrl || DEFAULT_AVATAR;
-                document.getElementById('other-profile-nickname').textContent = data.nickname || data.username || data.login || "...";
-                
-                const userBio = data.bio ? data.bio.trim() : "";
-                document.getElementById('other-profile-bio').textContent = userBio;
-                document.getElementById('other-profile-bio').style.display = userBio ? 'block' : 'none';
-                
-                const followers = data.followers || [];
-                const following = data.following || [];
-                
-                currentOtherFollowers = followers;
-                currentOtherFollowing = following;
-
-                document.getElementById('other-followers-count').textContent = followers.length;
-                document.getElementById('other-following-count').textContent = following.length;
-                
+            const loginEl = document.getElementById('other-profile-login');
+            if(loginEl) { 
+                if (data.firstName || data.lastName) {
+                    loginEl.textContent = `@${data.login || data.username || 'user'}`; 
+                    loginEl.style.display = 'block'; 
+                } else {
+                    loginEl.style.display = 'none';
+                }
+            }
+            
+            const avatarEl = document.getElementById('other-profile-avatar');
+            if(avatarEl) avatarEl.src = otherProfileAvatar;
+            
+            const bioEl = document.getElementById('other-profile-bio');
+            if(bioEl) { bioEl.textContent = data.bio || ''; bioEl.style.display = data.bio ? 'block' : 'none'; }
+            
+            const followersCount = document.getElementById('other-followers-count');
+            if(followersCount) followersCount.textContent = (data.followers || []).length;
+            const followingCount = document.getElementById('other-following-count');
+            if(followingCount) followingCount.textContent = (data.following || []).length;
+            
+            const btnFollowers = document.getElementById('other-followers-btn');
+            if(btnFollowers) btnFollowers.dataset.userId = userId;
+            const btnFollowing = document.getElementById('other-following-btn');
+            if(btnFollowing) btnFollowing.dataset.userId = userId;
+            const btnMessage = document.getElementById('message-user-btn');
+            if(btnMessage) btnMessage.dataset.userId = userId; 
+            
+            const followBtn = document.getElementById('follow-user-btn');
+            if(followBtn) {
                 const myUid = auth.currentUser?.uid;
-                if (myUid && followers.includes(myUid)) {
-                    followBtn.textContent = "Відписатися"; 
-                    followBtn.style.background = "transparent"; 
-                    followBtn.style.color = "var(--text-color, #000)";
-                    followBtn.style.border = "1px solid var(--border-color, #ccc)";
+                if (myUid && (data.followers || []).includes(myUid)) {
+                    followBtn.textContent = "Відписатися"; followBtn.style.background = "transparent"; followBtn.style.color = "var(--text-color)"; followBtn.style.border = "1px solid var(--border-color)";
                 } else {
-                    followBtn.textContent = "Підписатися"; 
-                    followBtn.style.background = "var(--text-color, #000)"; 
-                    followBtn.style.color = "var(--bg-color, #fff)";
-                    followBtn.style.border = "none";
+                    followBtn.textContent = "Підписатися"; followBtn.style.background = "var(--text-color)"; followBtn.style.color = "var(--bg-color)"; followBtn.style.border = "none";
                 }
             }
-        });
 
-        if (otherProfilePostsUnsubscribe) otherProfilePostsUnsubscribe();
-        otherProfilePostsUnsubscribe = onSnapshot(query(collection(db, "posts"), where("authorId", "==", userId), orderBy("createdAt", "desc")), (snapshot) => {
-            grid.innerHTML = '';
-            if (snapshot.empty) grid.innerHTML = '<p style="text-align:center; grid-column:1/-1; color:#888;">Немає публікацій</p>';
-            else {
-                snapshot.forEach(pSnap => {
-                     const post = pSnap.data();
-                     const tile = document.createElement('div');
-                     tile.className = 'profile-post-tile';
-                     if (post.mediaType === 'image' && post.mediaUrl) tile.innerHTML = `<img src="${post.mediaUrl}" style="width:100%; height:100%; object-fit:cover;">`;
-                     else if (post.mediaType === 'video' && post.mediaUrl) tile.innerHTML = `<video src="${post.mediaUrl}" muted style="width:100%; height:100%; object-fit:cover;"></video>`;
-                     else if (post.text) tile.innerHTML = `<div class="text-post-preview" style="padding:10px;"><p style="font-size:12px; margin:0;">${post.text}</p></div>`;
-                     grid.appendChild(tile);
-                });
-            }
-        });
-    };
+            // Оновлюємо вже завантажені пости
+            document.querySelectorAll('#other-profile-grid .post-username').forEach(el => el.textContent = otherProfileName);
+            document.querySelectorAll('#other-profile-grid .avatar-wrapper img').forEach(el => el.src = otherProfileAvatar);
+        }
+    });
 
-    if (followBtn) {
-        followBtn.addEventListener('click', async () => {
-            const myUid = auth.currentUser?.uid;
-            if (!myUid || !currentViewedUserId) return;
-            const myRef = doc(db, "users", myUid);
-            const targetRef = doc(db, "users", currentViewedUserId);
-            followBtn.disabled = true; 
-            try {
-                const targetSnap = await getDoc(targetRef);
-                const isFollowing = targetSnap.exists() && (targetSnap.data().followers || []).includes(myUid);
-                if (isFollowing) {
-                    await setDoc(myRef, { following: arrayRemove(currentViewedUserId) }, { merge: true });
-                    await setDoc(targetRef, { followers: arrayRemove(myUid) }, { merge: true });
-                } else {
-                    await setDoc(myRef, { following: arrayUnion(currentViewedUserId) }, { merge: true });
-                    await setDoc(targetRef, { followers: arrayUnion(myUid) }, { merge: true });
+    if(window.otherCollabUnsub) window.otherCollabUnsub();
+    window.otherCollabUnsub = onSnapshot(query(collection(db, "collaborations"), where("authorId", "==", userId)), (snapshot) => {
+        const badge = document.getElementById('other-profile-collab-badge');
+        if(!badge) return;
+        let activeCollab = null;
+        snapshot.forEach(doc => { activeCollab = doc.data(); });
+        if (activeCollab) {
+            badge.textContent = `${activeCollab.type === "Шукаю" ? "Шукаю:" : "Відкритий:"} ${activeCollab.title}`;
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+    });
+
+    const feed = document.getElementById('other-profile-grid');
+    if (feed) {
+        feed.innerHTML = '<p style="text-align:center; color: var(--text-secondary); margin-top: 40px; width: 100%;">Завантаження...</p>';
+        if(otherPostsUnsub) otherPostsUnsub();
+        otherPostsUnsub = onSnapshot(query(collection(db, "posts"), where("authorId", "==", userId), orderBy("createdAt", "desc")), (snapshot) => {
+            feed.innerHTML = '';
+            if(snapshot.empty) { feed.innerHTML = '<p style="text-align:center; color: var(--text-secondary); margin-top: 40px; width: 100%;">Немає публікацій</p>'; return; }
+            
+            snapshot.forEach(pDoc => {
+                const post = pDoc.data();
+                const postId = pDoc.id;
+                let mediaHTML = '';
+                if (post.mediaUrl) {
+                    if (post.mediaType === 'image') mediaHTML = `<img src="${post.mediaUrl}" class="post-media" alt="Post">`;
+                    else if (post.mediaType === 'video') mediaHTML = `<video src="${post.mediaUrl}" class="post-media" controls></video>`;
                 }
-            } catch(e) { console.error(e); }
-            followBtn.disabled = false;
+                
+                let timeString = 'Щойно';
+                if (post.createdAt) {
+                    timeString = post.createdAt.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                }
+
+                let reactionsPillsHtml = '';
+                let iReactedToPost = false;
+                const currentUserUid = auth.currentUser?.uid;
+                if (post.reactions) {
+                    for (const [emoji, usersArray] of Object.entries(post.reactions)) {
+                        if (usersArray && usersArray.length > 0) {
+                            const isMe = currentUserUid && usersArray.includes(currentUserUid);
+                            if (isMe) iReactedToPost = true;
+                            const activeClass = isMe ? 'reacted-by-me' : '';
+                            reactionsPillsHtml += `<span class="reaction-pill ${activeClass}" data-emoji="${emoji}" data-post-id="${postId}">${emoji} ${usersArray.length}</span>`;
+                        }
+                    }
+                }
+
+                const reactionSmileIcon = iReactedToPost ? 'bi-emoji-smile-fill' : 'bi-emoji-smile';
+                const reactionSmileColor = iReactedToPost ? 'var(--text-color)' : 'var(--text-secondary)';
+
+                const currentAvatar = otherProfileAvatar;
+                const currentName = otherProfileName;
+                
+                const postElement = document.createElement('div');
+                postElement.classList.add('post-card');
+                postElement.innerHTML = `
+                    <div class="post-header" style="display: flex; align-items: center; margin-bottom: 12px;">
+                        <div class="avatar-wrapper" style="width: 42px; height: 42px; overflow: hidden; border-radius: 50%; flex-shrink: 0; margin-right: 14px;">
+                            <img src="${currentAvatar}" style="width: 100%; height: 100%; object-fit: cover;">
+                        </div>
+                        <div class="post-user-info" style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+                            <span class="post-username" style="font-size: 15px; font-weight: 600; color: var(--text-color);">${currentName}</span>
+                            <span class="post-time" style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">${timeString}</span>
+                        </div>
+                    </div>
+                    <div class="post-content">${post.text ? `<p class="post-text">${post.text}</p>` : ''}${mediaHTML}</div>
+                    <div class="post-bottom-actions">
+                        <div class="reaction-picker-container">
+                            <button class="add-reaction-btn" data-post-id="${postId}"><i class="bi ${reactionSmileIcon}" style="color: ${reactionSmileColor};"></i></button>
+                            <div class="post-reaction-picker hidden" style="position: absolute; bottom: 35px; left: -10px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 20px; padding: 8px 12px; display: flex; gap: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); z-index: 100;">
+                                <span class="emoji-btn" data-emoji="❤️" data-post-id="${postId}">❤️</span>
+                                <span class="emoji-btn" data-emoji="🔥" data-post-id="${postId}">🔥</span>
+                                <span class="emoji-btn" data-emoji="👏" data-post-id="${postId}">👏</span>
+                                <span class="emoji-btn" data-emoji="💡" data-post-id="${postId}">💡</span>
+                            </div>
+                        </div>
+                        <div class="post-reactions-list">${reactionsPillsHtml}</div>
+                    </div>
+                `;
+                feed.appendChild(postElement);
+            });
         });
     }
+};
 
-    if (messageUserBtn) {
-        messageUserBtn.addEventListener('click', () => {
-            const nickname = document.getElementById('other-profile-nickname').textContent;
-            const avatar = document.getElementById('other-profile-avatar').src;
-            if (window.openChatWithUser) window.openChatWithUser(currentViewedUserId, nickname, avatar);
-        });
+document.addEventListener('click', async (e) => {
+    // ... логіка кліків чужого профілю (залишаємо без змін) ...
+    if (e.target.closest('#other-profile-tab-all')) {
+        const dp = document.getElementById('other-profile-all-dropdown');
+        if(dp) dp.classList.toggle('hidden');
+        return;
+    }
+    if (e.target.closest('#other-profile-all-dropdown .dropdown-item')) {
+        const btn = e.target.closest('.dropdown-item');
+        const textEl = document.getElementById('other-profile-tab-all-text');
+        if(textEl) textEl.innerHTML = `Усе <span style="color: var(--text-secondary); font-size: 13px; font-weight: 600;">• ${btn.textContent}</span>`;
+        document.getElementById('other-profile-all-dropdown').classList.add('hidden');
+        return;
+    }
+    if (!e.target.closest('#other-profile-all-dropdown') && !e.target.closest('#other-profile-tab-all')) {
+        const dropdown = document.getElementById('other-profile-all-dropdown');
+        if(dropdown && !dropdown.classList.contains('hidden')) dropdown.classList.add('hidden');
+    }
+
+    if (e.target.closest('#my-followers-btn') || e.target.closest('#my-following-btn') || e.target.closest('#other-followers-btn') || e.target.closest('#other-following-btn')) {
+        const btn = e.target.closest('div[id$="-btn"]');
+        const isFollowers = btn.id.includes('followers');
+        window.currentViewedUserId = btn.id.startsWith('my-') ? auth.currentUser?.uid : btn.dataset.userId;
+
+        if (!window.currentViewedUserId) return;
+        const modal = document.getElementById('users-list-modal');
+        if(modal) modal.classList.remove('hidden');
+        
+        document.querySelectorAll('.modal-tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(isFollowers ? 'modal-tab-followers' : 'modal-tab-following')?.classList.add('active');
+        window.renderUsersListInModal(window.currentViewedUserId, isFollowers ? 'followers' : 'following');
+    }
+
+    if (e.target.closest('#modal-tab-followers')) {
+        document.querySelectorAll('.modal-tab-btn').forEach(b => b.classList.remove('active'));
+        e.target.closest('button').classList.add('active');
+        window.renderUsersListInModal(window.currentViewedUserId, 'followers');
+    }
+    if (e.target.closest('#modal-tab-following')) {
+        document.querySelectorAll('.modal-tab-btn').forEach(b => b.classList.remove('active'));
+        e.target.closest('button').classList.add('active');
+        window.renderUsersListInModal(window.currentViewedUserId, 'following');
+    }
+
+    if (e.target.closest('#close-users-list-btn')) {
+        const modal = document.getElementById('users-list-modal');
+        if (modal) modal.classList.add('hidden');
+    }
+
+    if (e.target.closest('.user-profile-trigger')) {
+        e.preventDefault();
+        const trigger = e.target.closest('.user-profile-trigger');
+        const targetUserId = trigger.getAttribute('data-user-id') || trigger.dataset.userId;
+        if (!targetUserId) return;
+
+        if (auth.currentUser && targetUserId === auth.currentUser.uid) {
+            const listModal = document.getElementById('users-list-modal');
+            if (listModal) listModal.classList.add('hidden');
+            const profileModal = document.getElementById('other-user-profile-modal');
+            if (profileModal) profileModal.classList.add('hidden');
+            
+            document.querySelectorAll('.app-screen').forEach(s => s.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            
+            const profileScreen = document.getElementById('screen-profile');
+            if (profileScreen) profileScreen.classList.remove('hidden');
+            
+            const navBtn = document.querySelector('.nav-btn[data-screen="screen-profile"]');
+            if (navBtn) navBtn.classList.add('active');
+        } else {
+            window.openOtherProfile(targetUserId);
+        }
+    }
+
+    if (e.target.closest('#close-other-profile-btn')) {
+        const modal = document.getElementById('other-user-profile-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+        }
+        
+        if (window.previousScreenForProfile === 'chat-room-modal') {
+            const chatModal = document.getElementById('chat-room-modal');
+            if (chatModal) {
+                chatModal.classList.remove('hidden');
+                chatModal.classList.add('active');
+            }
+        } else {
+            document.querySelector('.nav-btn.active')?.click();
+        }
+        window.previousScreenForProfile = null;
+    }
+
+    if (e.target.closest('#follow-user-btn')) {
+        const followBtn = e.target.closest('#follow-user-btn');
+        const myUid = auth.currentUser?.uid;
+        if (!myUid || !window.currentViewedUserId) return window.showCustomModal({ title: "Увага", message: "Увійдіть в акаунт!" });
+        
+        followBtn.disabled = true; 
+        try {
+            const targetRef = doc(db, "users", window.currentViewedUserId);
+            const myRef = doc(db, "users", myUid);
+            const targetSnap = await getDoc(targetRef);
+            const isFollowing = targetSnap.exists() && (targetSnap.data().followers || []).includes(myUid);
+            
+            if (isFollowing) {
+                await setDoc(myRef, { following: arrayRemove(window.currentViewedUserId) }, { merge: true });
+                await setDoc(targetRef, { followers: arrayRemove(myUid) }, { merge: true });
+            } else {
+                await setDoc(myRef, { following: arrayUnion(window.currentViewedUserId) }, { merge: true });
+                await setDoc(targetRef, { followers: arrayUnion(myUid) }, { merge: true });
+            }
+        } catch(e) { console.error(e); }
+        followBtn.disabled = false;
+    }
+
+    if (e.target.closest('#message-user-btn')) {
+        const currentUser = auth.currentUser;
+        const targetUserId = e.target.closest('#message-user-btn').dataset.userId;
+        
+        if (!currentUser || !targetUserId) return;
+        const roomId = currentUser.uid < targetUserId ? `${currentUser.uid}_${targetUserId}` : `${targetUserId}_${currentUser.uid}`;
+
+        await setDoc(doc(db, "chats", roomId), {
+            participants: [currentUser.uid, targetUserId],
+            timestamp: serverTimestamp()
+        }, { merge: true });
+
+        const modal = document.getElementById('other-user-profile-modal');
+        if(modal) {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+        }
+        
+        document.querySelectorAll('.app-screen').forEach(s => s.classList.add('hidden'));
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        
+        const msgScreen = document.getElementById('screen-messages');
+        if(msgScreen) msgScreen.classList.remove('hidden');
+        const navBtn = document.querySelector('.nav-btn[data-screen="screen-messages"]');
+        if(navBtn) navBtn.classList.add('active');
     }
 });

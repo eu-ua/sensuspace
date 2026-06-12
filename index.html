@@ -17,9 +17,8 @@
     <link rel="stylesheet" href="css/auth.css">
 
     <style>
-        .post-media, .post-card img { width: 100% !important; height: auto !important; max-height: 85vh !important; object-fit: contain !important; border-radius: 12px; }
+        .post-media, .post-card img { width: 100% !important; height: auto !important; max-height: 85vh !important; object-fit: contain !important; border-radius: 12px; border: none !important; }
         #chat-action-preview-container.hidden, #chat-media-preview-container.hidden, #chat-search-bar.hidden, .reaction-picker.hidden { display: none !important; }
-
         .chat-wrapper { width: 100%; max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; height: 100%; }
         #chat-messages-container { flex: 1; overflow-y: auto; padding: 20px 15px; display: flex; flex-direction: column; gap: 12px; }
         .chat-message { max-width: 78%; padding: 12px 18px; font-size: 15px; line-height: 1.4; word-wrap: break-word; display: flex; flex-direction: column; position: relative; }
@@ -54,19 +53,8 @@
         .hide-scroll::-webkit-scrollbar { display: none; }
         .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* ================================================= */
-        /* ДИЗАЙН СТРІЧКИ ЯК У THREADS                       */
-        /* ================================================= */
         .feed-container, .profile-feed { padding-top: 10px; }
-        
-        .post-card {
-            border-bottom: 1px solid var(--border-color); /* Тонка лінія знизу */
-            padding-bottom: 16px; 
-            margin-bottom: 16px; 
-            background: transparent;
-            border-radius: 0;
-            box-shadow: none;
-        }
+        .post-card { border-bottom: 1px solid var(--border-color); padding-bottom: 16px; margin-bottom: 16px; background: transparent; border-radius: 0; box-shadow: none; border-top: none; border-left: none; border-right: none; }
         .post-card:last-child { border-bottom: none; }
 
         .post-bottom-actions { display: flex; gap: 12px; align-items: center; margin-top: 12px; }
@@ -78,14 +66,9 @@
         .post-reaction-picker .emoji-btn:hover { transform: scale(1.2); }
         
         .post-reactions-list { display: flex; gap: 8px; flex-wrap: wrap; flex: 1; }
-        .reaction-pill { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 16px; padding: 4px 10px; font-size: 13px; display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 600; color: var(--text-color); transition: background 0.2s; user-select: none; }
-        
-        /* ПУНКТ 8: Тільки жирне обведення для реакцій */
-        .reaction-pill.reacted-by-me { background: transparent !important; color: var(--text-color) !important; border: 2px solid var(--text-color) !important; font-weight: 800 !important; }
+        .reaction-pill { background: transparent; border: 1px solid var(--border-color); border-radius: 16px; padding: 4px 10px; font-size: 13px; display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 600; color: var(--text-secondary); transition: 0.2s; user-select: none; }
+        .reaction-pill.reacted-by-me { border-color: var(--text-color) !important; color: var(--text-color) !important; background: transparent !important; box-shadow: 0 0 5px rgba(0,0,0,0.05); }
 
-        /* ================================================= */
-        /* ВКЛАДКИ З ТОНКОЮ ЛІНІЄЮ (ПУНКТ 4)                 */
-        /* ================================================= */
         .profile-tabs-container { display: flex; width: 100%; border-bottom: 1px solid var(--border-color); position: relative; }
         .profile-tab-btn { flex: 1; padding: 14px 5px; background: none; border: none; font-weight: 600; font-size: 14px; color: var(--text-secondary); cursor: pointer; position: relative; display: flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
         .profile-tab-btn.active { color: var(--text-color); font-weight: 800; }
@@ -142,8 +125,7 @@
                 <div style="flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; width: 100%; box-sizing: border-box;">
                     <h2 style="margin: 0; font-size: 24px; font-weight: 700; text-align: left; color: var(--text-color);">Простір</h2>
                     <div style="display: flex; gap: 15px; align-items: center;">
-                        <button class="create-post-trigger" style="margin: 0; padding: 0; color: var(--text-color); background: none; border: none; font-size: 22px; cursor: pointer;"><i class="bi bi-plus-square"></i></button>
-                        <button style="margin: 0; padding: 0; color: var(--text-color); background: none; border: none; font-size: 22px; cursor: pointer;"><i class="bi bi-bell"></i></button>
+                        <button id="open-notifications-btn" style="margin: 0; padding: 0; color: var(--text-color); background: none; border: none; font-size: 22px; cursor: pointer;"><i class="bi bi-bell"></i></button>
                     </div>
                 </div>
 
@@ -151,7 +133,7 @@
                     <div style="margin-top: 15px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 20px; margin-bottom: 16px;">
                             <h3 style="font-size: 17px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 8px;">✨ Відкриття дня</h3>
-                            <span style="font-size: 13px; color: var(--text-secondary); cursor: pointer; font-weight: 600; transition: 0.2s;">Більше</span>
+                            <span id="open-discoveries-btn" style="font-size: 13px; color: var(--text-secondary); cursor: pointer; font-weight: 600; transition: 0.2s;">Більше</span>
                         </div>
                         <div id="discoveries-container" class="hide-scroll" style="display: flex; gap: 18px; overflow-x: auto; padding: 0 20px 10px 20px; scroll-behavior: smooth; -webkit-overflow-scrolling: touch;"></div>
                     </div>
@@ -159,19 +141,85 @@
                     <div style="margin-top: 25px; margin-bottom: 10px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 20px; margin-bottom: 16px;">
                             <h3 style="font-size: 17px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 8px;"><i class="bi bi-people-fill" style="font-size: 18px;"></i> Колаборації</h3>
-                            <span id="add-collab-btn" style="font-size: 13px; color: var(--text-secondary); cursor: pointer; font-weight: 600; transition: 0.2s;">Додати</span>
+                            <div style="display: flex; gap: 12px; align-items: center;">
+                                <span id="open-all-collabs-btn" style="font-size: 13px; color: var(--text-secondary); cursor: pointer; font-weight: 600;">Більше</span>
+                                <button class="icon-btn" id="add-collab-btn" style="margin: 0; padding: 0; font-size: 20px; color: var(--text-color);"><i class="bi bi-plus-square"></i></button>
+                            </div>
                         </div>
                         <div id="collaborations-container" class="hide-scroll" style="display: flex; gap: 16px; overflow-x: auto; padding: 0 20px 10px 20px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;"></div>
                     </div>
 
-                    <div class="feed-filters" style="padding: 15px 20px 5px 20px; display: flex; gap: 10px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;">
-                        <button class="space-filter-btn active" style="flex-shrink: 0; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 14px; border: none; cursor: pointer; transition: 0.2s;">Всі пости</button>
-                        <button class="space-filter-btn" style="flex-shrink: 0; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 14px; border: none; cursor: pointer; transition: 0.2s;">В процесі 🛠️</button>
-                        <button class="space-filter-btn" style="flex-shrink: 0; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 14px; border: none; cursor: pointer; transition: 0.2s;">Потрібна критика 💬</button>
+                    <div style="padding: 15px 20px 5px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color);">
+                        <div class="feed-filters" style="display: flex; gap: 10px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;">
+                            <button class="space-filter-btn active" style="flex-shrink: 0; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 14px; border: none; cursor: pointer; transition: 0.2s;">Всі пости</button>
+                            <button class="space-filter-btn" style="flex-shrink: 0; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 14px; border: none; cursor: pointer; transition: 0.2s;">В процесі 🛠️</button>
+                            <button class="space-filter-btn" style="flex-shrink: 0; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 14px; border: none; cursor: pointer; transition: 0.2s;">Потрібна критика 💬</button>
+                        </div>
+                        <button class="create-post-trigger icon-btn" style="margin: 0 0 0 10px; padding: 0; font-size: 22px; color: var(--text-color); flex-shrink: 0;"><i class="bi bi-plus-square"></i></button>
                     </div>
 
                     <div class="feed-container" style="padding: 0 20px; padding-top: 15px;">
                         <p style="text-align:center; color: var(--text-secondary); margin-top: 40px;">Завантаження...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="screen-lab" class="app-screen hidden">
+            <div class="space-container" style="width: 100%; max-width: 600px; margin: 0 auto; height: 100%; display: flex; flex-direction: column;">
+                <div style="flex-shrink: 0; padding: 15px 20px; width: 100%; box-sizing: border-box; border-bottom: 1px solid var(--border-color);">
+                    <h2 style="margin: 0; font-size: 24px; font-weight: 700; text-align: left; color: var(--text-color);">Рейтинг тижня (незабаром)</h2>
+                </div>
+
+                <div style="flex: 1; overflow-y: auto; padding-bottom: 85px;">
+
+                    <div style="padding: 0 20px 20px 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h3 style="font-size: 17px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 8px;">🔥 Топ-20/50/100</h3>
+                            <span style="font-size: 13px; color: var(--text-secondary); font-weight: 600;">Незабаром</span>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <div style="background: transparent; border: 1px solid var(--border-color); border-radius: 16px; padding: 15px; display: flex; align-items: center; gap: 15px; opacity: 0.6;">
+                                <div style="font-size: 18px; font-weight: 800; color: var(--text-secondary); width: 20px; text-align: center;">1</div>
+                                <div style="width: 44px; height: 44px; background: var(--bg-secondary); border-radius: 12px; display: flex; align-items: center; justify-content: center;"><i class="bi bi-image" style="color: var(--text-secondary); font-size: 20px;"></i></div>
+                                <div style="flex: 1;">
+                                    <h4 style="margin: 0; font-size: 15px; color: var(--text-color);">Місце для проєкту</h4>
+                                    <p style="margin: 2px 0 0 0; font-size: 13px; color: var(--text-secondary);">Творець</p>
+                                </div>
+                                <div style="color: var(--text-color); font-weight: 700; font-size: 14px;"><i class="bi bi-star-fill" style="color: var(--text-secondary); margin-right: 4px;"></i>0</div>
+                            </div>
+                            <div style="background: transparent; border: 1px solid var(--border-color); border-radius: 16px; padding: 15px; display: flex; align-items: center; gap: 15px; opacity: 0.4;">
+                                <div style="font-size: 18px; font-weight: 800; color: var(--text-secondary); width: 20px; text-align: center;">2</div>
+                                <div style="width: 44px; height: 44px; background: var(--bg-secondary); border-radius: 12px; display: flex; align-items: center; justify-content: center;"><i class="bi bi-music-note" style="color: var(--text-secondary); font-size: 20px;"></i></div>
+                                <div style="flex: 1;">
+                                    <h4 style="margin: 0; font-size: 15px; color: var(--text-color);">Місце для проєкту</h4>
+                                    <p style="margin: 2px 0 0 0; font-size: 13px; color: var(--text-secondary);">Творець</p>
+                                </div>
+                                <div style="color: var(--text-color); font-weight: 700; font-size: 14px;"><i class="bi bi-star-fill" style="color: var(--text-secondary); margin-right: 4px;"></i>0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="padding: 0 20px 30px 20px;">
+                        <div style="background: var(--text-color); border-radius: 20px; padding: 25px 20px; text-align: center; color: var(--bg-color); position: relative; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+
+
+                            <p style="margin: 0 0 20px 0; font-size: 14px; line-height: 1.5; font-weight: 500; opacity: 0.9;">Шукаємо бажаючих доєднатись до нашого проєкту. Програміст, креатор чи той, хто має круті ідеї для розвитку</p>
+                            
+                            <div class="user-profile-trigger" data-user-id="ТВІЙ_FIREBASE_UID_ТУТ" style="display: inline-flex; align-items: center; gap: 10px; background: var(--bg-color); padding: 10px 20px; border-radius: 20px; cursor: pointer; color: var(--text-color); transition: transform 0.2s;">
+                                <div style="font-size: 20px; line-height: 1;">🍩</div>
+                                <div style="text-align: left;">
+                                    <div style="font-weight: 800; font-size: 14px;">vadym_nko</div> 
+                                </div>
+                            </div>
+                            <div class="user-profile-trigger" data-user-id="ТВІЙ_FIREBASE_UID_ТУТ" style="display: inline-flex; align-items: center; gap: 10px; background: var(--bg-color); padding: 10px 20px; border-radius: 20px; cursor: pointer; color: var(--text-color); transition: transform 0.2s;">
+                                <div style="font-size: 20px; line-height: 1;">🍩</div>
+                                <div style="text-align: left;">
+                                    <div style="font-weight: 800; font-size: 14px;">Ann_Enn</div> 
+                                </div>
+                            </div>
+                            
+                        </div>
                     </div>
                 </div>
             </div>
@@ -207,9 +255,15 @@
                         <p id="my-profile-login" style="margin: 4px 0 12px 0; font-size: 15px; font-weight: 600; color: var(--text-secondary); display: none;">@login</p>
                         <p id="my-profile-bio" style="margin: 0 0 12px 0; font-size: 15px; color: var(--text-color); line-height: 1.4; white-space: pre-wrap;"></p>
                         
-                        <div id="my-followers-btn" style="display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
-                            <span id="my-followers-count" style="font-weight: 700; font-size: 15px; color: var(--text-color);">0</span>
-                            <span style="color: var(--text-secondary); font-size: 15px;">читачів</span>
+                        <div style="display: flex; gap: 15px; align-items: center; margin-top: 8px;">
+                            <div id="my-followers-btn" style="display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+                                <span id="my-followers-count" style="font-weight: 700; font-size: 15px; color: var(--text-color);">0</span>
+                                <span style="color: var(--text-secondary); font-size: 15px;">читачів</span>
+                            </div>
+                            <div id="my-following-btn" style="display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+                                <span id="my-following-count" style="font-weight: 700; font-size: 15px; color: var(--text-color);">0</span>
+                                <span style="color: var(--text-secondary); font-size: 15px;">підписок</span>
+                            </div>
                         </div>
                     </div>
                     
@@ -248,6 +302,7 @@
 
         <nav class="bottom-nav">
             <button class="nav-btn active" data-screen="screen-home"><i class="bi bi-compass"></i></button>
+            <button class="nav-btn" data-screen="screen-lab"><i class="bi bi-stars"></i></button>
             <button class="nav-btn" data-screen="screen-messages"><i class="bi bi-chat-square-text"></i></button>
             <button class="nav-btn" data-screen="screen-profile"><i class="bi bi-person"></i></button>
         </nav>
@@ -408,7 +463,136 @@
             </div>
         </div>
 
+        <section id="chat-room-modal" class="app-screen hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100dvh; z-index: 2000; background: var(--bg-color); overflow: hidden;">
+            <div class="chat-wrapper" style="display: flex; flex-direction: column; height: 100%; max-width: 600px; margin: 0 auto; background: var(--bg-color);">
+                <div class="chat-header" style="flex-shrink: 0; padding: 15px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); background: var(--bg-color); z-index: 10;">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <button id="close-chat-room-btn" class="icon-btn" style="color: var(--text-color);"><i class="bi bi-arrow-left"></i></button>
+                        <img id="chat-room-avatar" src="" style="width: 35px; height: 35px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-color);">
+                        <h3 id="chat-room-name" style="margin: 0; font-size: 16px; color: var(--text-color);">Ім'я</h3>
+                    </div>
+                    <button id="chat-search-btn" class="icon-btn" style="color: var(--text-primary);"><i class="bi bi-search"></i></button>
+                </div>
+                <div id="chat-search-bar" class="hidden" style="padding: 10px 15px; background: var(--bg-color);">
+                    <input type="text" id="chat-inner-search-input" placeholder="Пошук повідомлень..." autocomplete="off" style="width: 100%; padding: 10px 18px; border-radius: 20px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-color); outline: none; font-size: 14px;">
+                </div>
+                <div id="chat-messages-container" style="flex-grow: 1; overflow-y: auto; padding: 20px 15px; display: flex; flex-direction: column; gap: 16px; background: var(--bg-color);"></div>
+                <div class="chat-room-input-area" style="flex-shrink: 0; padding: 10px 15px; display: flex; gap: 10px; align-items: center; border-top: 1px solid var(--border-color); background: var(--bg-color); padding-bottom: calc(15px + env(safe-area-inset-bottom));">
+                    <button id="chat-attach-btn" class="icon-btn" style="font-size: 22px; color: var(--text-secondary); background: none; border: none; cursor: pointer; padding: 0 5px;"><i class="bi bi-paperclip"></i></button>
+                    <input type="file" id="chat-media-input" accept="image/*,video/*" hidden>
+                    <input type="text" id="chat-message-input" placeholder="Написати..." autocomplete="off" style="flex: 1; background-color: var(--bg-secondary); border: none; border-radius: 24px; padding: 14px 20px; color: var(--text-color); outline: none; font-size: 15px;">
+                    <button id="send-message-btn" style="background: transparent; color: var(--text-color); border: none; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 22px; cursor: pointer; transition: 0.2s;"><i class="bi bi-send-fill"></i></button>
+                </div>
+            </div>
+        </section>
+
+        <div id="other-user-profile-modal" class="hidden" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100dvh; z-index: 9999; background: var(--bg-color); overflow-y: auto;">
+            <div class="other-profile-wrapper" style="width: 100%; max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; min-height: 100%; background: var(--bg-color);">
+                <div style="display: flex; justify-content: space-between; padding: 15px; position: sticky; top: 0; background: var(--bg-color); z-index: 10; border-bottom: 1px solid var(--border-color);">
+                    <button id="close-other-profile-btn" class="icon-btn" style="margin: 0; padding: 0; font-size: 24px; color: var(--text-color);"><i class="bi bi-arrow-left"></i></button>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; padding: 0 15px; margin-bottom: 20px; margin-top: 5px;">
+                    <div style="flex: 1; padding-right: 15px;">
+                        <h2 id="other-profile-fullname" style="margin: 0; font-size: 24px; font-weight: 800; color: var(--text-color); line-height: 1.2;">Завантаження...</h2>
+                        <p id="other-profile-login" style="margin: 4px 0 12px 0; font-size: 15px; font-weight: 600; color: var(--text-secondary); display: none;">@login</p>
+                        <p id="other-profile-bio" style="margin: 0 0 12px 0; font-size: 15px; color: var(--text-color); line-height: 1.4; white-space: pre-wrap; display: none;"></p>
+                        <div style="display: flex; gap: 15px; align-items: center; margin-top: 8px;">
+                            <div id="other-followers-btn" style="display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+                                <span id="other-followers-count" style="font-weight: 700; font-size: 15px; color: var(--text-color);">0</span>
+                                <span style="color: var(--text-secondary); font-size: 15px;">читачів</span>
+                            </div>
+                            <div id="other-following-btn" style="display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+                                <span id="other-following-count" style="font-weight: 700; font-size: 15px; color: var(--text-color);">0</span>
+                                <span style="color: var(--text-secondary); font-size: 15px;">підписок</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; flex-shrink: 0;">
+                        <div style="width: 80px; height: 80px; border-radius: 50%; overflow: hidden; border: 1px solid var(--border-color);">
+                            <img id="other-profile-avatar" src="" style="width: 100%; height: 100%; object-fit: cover;">
+                        </div>
+                        <div id="other-profile-collab-badge" class="hidden" style="background: var(--text-color); color: var(--bg-color); font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 6px 10px; border-radius: 8px; text-align: center; max-width: 130px; white-space: normal; line-height: 1.3; word-wrap: break-word;"></div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px; padding: 0 15px; margin-bottom: 20px;">
+                    <button id="follow-user-btn" style="flex: 1; padding: 10px; border-radius: 12px; font-weight: 700; font-size: 15px; border: none; cursor: pointer; transition: 0.2s; background: var(--text-color); color: var(--bg-color);">Підписатися</button>
+                    <button id="message-user-btn" style="flex: 1; padding: 10px; border-radius: 12px; font-weight: 700; font-size: 15px; border: 1px solid var(--border-color); cursor: pointer; transition: 0.2s; background: transparent; color: var(--text-color);">Написати</button>
+                </div>
+                <div class="profile-tabs-container">
+                    <div style="flex: 1; display: flex; justify-content: center; position: relative;">
+                        <button id="other-profile-tab-all" class="profile-tab-btn active" style="width: 100%;">
+                            <span id="other-profile-tab-all-text">Усе</span> <i class="bi bi-chevron-down" style="font-size: 12px; font-weight: 900; margin-left: 2px;"></i>
+                        </button>
+                        <div id="other-profile-all-dropdown" class="hidden" style="position: absolute; top: 100%; left: 0; width: 100%; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 0 0 12px 12px; padding: 5px; z-index: 100; box-shadow: 0 8px 24px rgba(0,0,0,0.15);">
+                            <button class="dropdown-item" style="width: 100%; text-align: left; padding: 12px 10px; background: none; border: none; color: var(--text-color); font-weight: 600; font-size: 14px; cursor: pointer; border-radius: 8px;">Популярне</button>
+                            <button class="dropdown-item" style="width: 100%; text-align: left; padding: 12px 10px; background: none; border: none; color: var(--text-secondary); font-weight: 600; font-size: 14px; cursor: pointer; border-radius: 8px;">Змішане</button>
+                        </div>
+                    </div>
+                    <button class="profile-tab-btn">Проєкти</button>
+                    <button class="profile-tab-btn">Відповіді</button>
+                </div>
+                <div id="other-profile-grid" class="profile-feed" style="flex: 1; padding: 15px 20px 85px 20px;"></div>
+            </div>
+        </div>
+
+        <div id="notifications-modal" class="popup-modal hidden" style="z-index: 3500; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0, 0, 0, 0.4); display: flex; align-items: center; justify-content: center; padding: 15px; box-sizing: border-box; backdrop-filter: blur(3px);">
+            <div class="popup-content" style="width: 100%; max-width: 400px; max-height: 85dvh; display: flex; flex-direction: column; background: var(--bg-color); border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); padding: 15px 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: var(--text-color);">Сповіщення</h3>
+                    <button id="close-notifications-btn" class="icon-btn" style="color: var(--text-color); margin: 0; padding: 0; font-size: 20px;"><i class="bi bi-x-lg"></i></button>
+                </div>
+                <div id="notifications-list-container" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
+                    <p style="text-align:center; color: var(--text-secondary); margin-top: 20px;">Нових сповіщень немає</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="discoveries-modal" class="popup-modal hidden" style="z-index: 3500; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0, 0, 0, 0.4); display: flex; align-items: center; justify-content: center; padding: 15px; box-sizing: border-box; backdrop-filter: blur(3px);">
+            <div class="popup-content" style="width: 100%; max-width: 450px; max-height: 85dvh; display: flex; flex-direction: column; background: var(--bg-color); border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); padding: 15px 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: var(--text-color);">Відкриття дня</h3>
+                    <button id="close-discoveries-btn" class="icon-btn" style="color: var(--text-color); margin: 0; padding: 0; font-size: 20px;"><i class="bi bi-x-lg"></i></button>
+                </div>
+                <div id="discoveries-list-container" style="flex: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                    <p style="text-align:center; grid-column: 1/-1; color: var(--text-secondary); margin-top: 20px;">Завантаження...</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="all-collabs-modal" class="popup-modal hidden" style="z-index: 3500; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0, 0, 0, 0.4); display: flex; align-items: center; justify-content: center; padding: 15px; box-sizing: border-box; backdrop-filter: blur(3px);">
+            <div class="popup-content" style="width: 100%; max-width: 450px; max-height: 85dvh; display: flex; flex-direction: column; background: var(--bg-color); border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); padding: 15px 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: var(--text-color);">Колаборації</h3>
+                    <button id="close-all-collabs-btn" class="icon-btn" style="color: var(--text-color); margin: 0; padding: 0; font-size: 20px;"><i class="bi bi-x-lg"></i></button>
+                </div>
+                <div style="margin-bottom: 15px; position: relative;">
+                    <i class="bi bi-search" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-secondary);"></i>
+                    <input type="text" id="collabs-search-input" placeholder="Пошук колаборацій..." style="width: 100%; padding: 12px 15px 12px 42px; border-radius: 16px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); outline: none; font-size: 14px;">
+                </div>
+                <div id="all-collabs-list-container" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;"></div>
+            </div>
+        </div>
+
+        <div id="collab-details-modal" class="popup-modal hidden" style="z-index: 4000; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0, 0, 0, 0.4); display: flex; align-items: center; justify-content: center; padding: 15px; box-sizing: border-box; backdrop-filter: blur(3px);">
+            <div class="popup-content" style="width: 100%; max-width: 450px; max-height: 85dvh; display: flex; flex-direction: column; background: var(--bg-color); border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; border-bottom: 1px solid var(--border-color);">
+                    <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: var(--text-color);">Деталі</h3>
+                    <button id="close-collab-details-btn" class="icon-btn" style="color: var(--text-color); margin: 0; padding: 0; font-size: 20px;"><i class="bi bi-x-lg"></i></button>
+                </div>
+                <div style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px;">
+                    <div id="collab-details-content" style="background: var(--bg-secondary); padding: 15px; border-radius: 16px;"></div>
+                    <div><h4 style="font-size: 15px; font-weight: 700; color: var(--text-color); margin-bottom: 10px;">Коментарі</h4></div>
+                    <div id="collab-comments-container" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                </div>
+                <div style="padding: 10px 20px; border-top: 1px solid var(--border-color); display: flex; gap: 10px;">
+                    <input type="text" id="collab-comment-input" placeholder="Написати коментар..." style="flex: 1; background-color: var(--bg-secondary); border: 1px solid transparent; border-radius: 20px; padding: 12px 15px; color: var(--text-color); outline: none; font-size: 14px;">
+                    <button id="send-collab-comment-btn" style="background: transparent; color: var(--text-color); border: none; width: 40px; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer;"><i class="bi bi-send-fill"></i></button>
+                </div>
+            </div>
+        </div>
+
     </div>
+
     <script type="module" src="js/app.js"></script>
 </body>
 </html>
