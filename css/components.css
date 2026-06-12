@@ -112,24 +112,36 @@
 }
 
 /* --- СТИЛІ ДЛЯ СТРІЧКИ ТА КАРТОК ПУБЛІКАЦІЙ --- */
+/* Прибираємо проміжки між постами, щоб вони йшли суцільною стрічкою */
 .feed-container {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 0; /* Було 14px, тепер 0 */
     max-width: 600px;
     margin: 0 auto;
 }
 
+/* Робимо пост прозорим і залишаємо лише роздільну смугу знизу */
 .post-card {
-    background-color: #1E1E1E;
-    border-radius: 18px;
-    padding: 16px;
-    transition: background-color 0.3s ease;
+    background-color: transparent !important; /* Жодного заливання фону */
+    border-radius: 0 !important; /* Жодних заокруглень */
+    padding: 20px 0; /* Відступи всередині: 20px зверху і знизу, 0 по боках */
+    border: none; 
+    border-bottom: 1px solid #2D2D2D !important; /* Темно-сіра лінія розділення */
+    box-shadow: none !important; /* Прибираємо будь-які тіні */
+    margin-bottom: 0;
 }
 
+/* Налаштування лінії для світлої теми */
 [data-theme="light"] .post-card {
-    background-color: #FFFFFF;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+    background-color: transparent !important;
+    border-bottom: 1px solid #EAEAEA !important; /* Світло-сіра лінія */
+    box-shadow: none !important;
+}
+
+/* У найостаннішого поста в стрічці лінію можна прибрати */
+.post-card:last-child {
+    border-bottom: none !important;
 }
 
 .post-header {
@@ -187,15 +199,15 @@
 /* Нижня панель кнопок дій (зменшено відступи) */
 .post-actions {
     display: flex;
-    justify-content: flex-start; /* Вирівнювання по лівому краю замість розтягування */
-    gap: 25px; /* Зменшений відступ між кнопками */
+    justify-content: flex-start; 
+    gap: 25px; 
     align-items: center;
     padding-top: 10px;
-    border-top: 1px solid #2D2D2D;
+    border-top: none; /* <--- Прибрали лінію тут */
 }
 
 [data-theme="light"] .post-actions {
-    border-top: 1px solid #F2F2F2;
+    border-top: none; /* <--- І прибрали лінію тут для світлої теми */
 }
 
 .action-btn {

@@ -1,5 +1,5 @@
 import { db, auth } from '../firebase-config.js';
-import { collection, doc, setDoc, getDoc, arrayUnion, arrayRemove, query, orderBy, onSnapshot, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { collection, doc, setDoc, getDoc, addDoc, arrayUnion, arrayRemove, query, orderBy, onSnapshot, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const DEFAULT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='12' fill='%23e0e0e0'/><path d='M12 14c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4zm0-2c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z' fill='%23999999'/></svg>";
 
@@ -121,7 +121,6 @@ window.openOtherProfile = async (userId, initialData = {}) => {
                 }
             }
 
-            // Оновлюємо вже завантажені пости
             document.querySelectorAll('#other-profile-grid .post-username').forEach(el => el.textContent = otherProfileName);
             document.querySelectorAll('#other-profile-grid .avatar-wrapper img').forEach(el => el.src = otherProfileAvatar);
         }
@@ -216,7 +215,6 @@ window.openOtherProfile = async (userId, initialData = {}) => {
 };
 
 document.addEventListener('click', async (e) => {
-    // ... логіка кліків чужого профілю (залишаємо без змін) ...
     if (e.target.closest('#other-profile-tab-all')) {
         const dp = document.getElementById('other-profile-all-dropdown');
         if(dp) dp.classList.toggle('hidden');
@@ -308,6 +306,7 @@ document.addEventListener('click', async (e) => {
         window.previousScreenForProfile = null;
     }
 
+    // --- ЛОГІКА ПІДПИСОК ТА СПОВІЩЕНЬ ПРО НИХ ---
     if (e.target.closest('#follow-user-btn')) {
         const followBtn = e.target.closest('#follow-user-btn');
         const myUid = auth.currentUser?.uid;
@@ -326,6 +325,11 @@ document.addEventListener('click', async (e) => {
             } else {
                 await setDoc(myRef, { following: arrayUnion(window.currentViewedUserId) }, { merge: true });
                 await setDoc(targetRef, { followers: arrayUnion(myUid) }, { merge: true });
+                
+                // ГЕНЕРАЦІЯ СПОВІЩЕННЯ ПРО НОВУ ПІДПИСКУ
+                await addDoc(collection(db, `users/${window.currentViewedUserId}/notifications`), {
+                    type: 'follow', fromUserId: myUid, createdAt: serverTimestamp(), read: false
+                });
             }
         } catch(e) { console.error(e); }
         followBtn.disabled = false;
