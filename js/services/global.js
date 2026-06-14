@@ -498,6 +498,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    checkWeather();
+
     // --- ЛОГІКА ДЛЯ ВКАДКИ "ПРОСТІР" (ВСТАВЛЕННЯ ВІДКРИТТЯ) ---
     const arrangeProstirFeed = () => {
         const feedContainer = document.querySelector('.feed-container');
