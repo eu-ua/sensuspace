@@ -146,3 +146,46 @@ body {
     0% { opacity: 1; }
     100% { opacity: 0; }
 }
+
+/* --- СУЧАСНИЙ UX ДЛЯ ВКАДКИ "ПРОСТІР" --- */
+
+.main-feed {
+    background-color: var(--bg-color);
+    padding: 0;
+}
+
+/* Колаборації */
+.collaborations-wrapper {
+    padding-bottom: 16px;
+    border-bottom: 1px solid #000000;
+}
+[data-theme="dark"] .collaborations-wrapper { border-color: #333333; }
+
+/* Картки колаборацій (тонка рамка) */
+#collaborations-container > div {
+    border: 1px solid #000000 !important;
+    border-radius: 8px !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    margin-right: 0;
+}
+[data-theme="dark"] #collaborations-container > div { border-color: #555555 !important; }
+
+/* Стрічка постів та Відкриття (без відступів по боках, лінії на всю ширину) */
+.feed-container .post-card, 
+.discovery-card {
+    padding: 24px 20px !important;
+    margin: 0 !important;
+    border-bottom: 1px solid #000000 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+}
+[data-theme="dark"] .feed-container .post-card, 
+[data-theme="dark"] .discovery-card { 
+    border-color: #333333 !important; 
+}
+
+/* Прибираємо лінію в останнього поста */
+.feed-container .post-card:last-child {
+    border-bottom: none !important;
+}

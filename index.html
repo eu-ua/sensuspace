@@ -121,55 +121,31 @@
         </div>
 
         <section id="screen-home" class="app-screen active">
-            <!-- Головний логотип Bublic -->
-        <div style="position: fixed; top: 15px; left: 0; width: 100%; display: flex; justify-content: center; z-index: 2000; pointer-events: none;">
-    
-            <!-- Фіксована обгортка -->
-<div style="position: fixed; top: 15px; left: 0; width: 100%; display: flex; justify-content: center; z-index: 2000; pointer-events: none;">
-    
-    <!-- Логотип-зображення Bublic -->
-    <img id="main-app-logo" src="./assets/icons/logo.png" alt="Logo" style="width: 44px; height: 44px; border-radius: 50%; cursor: pointer; pointer-events: auto; object-fit: cover; box-shadow: 0 4px 15px rgba(0,0,0,0.08); transform-origin: center; transition: none;">
-
-</div>
-
-        </div>
-            <div class="space-container" style="width: 100%; max-width: 600px; margin: 0 auto; height: 100%; display: flex; flex-direction: column;">
-                <div style="flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; width: 100%; box-sizing: border-box;">
-                    <h2 style="margin: 0; font-size: 24px; font-weight: 700; text-align: left; color: var(--text-color);">Простір</h2>
+            <div style="position: fixed; top: 15px; left: 0; width: 100%; display: flex; justify-content: center; z-index: 2000; pointer-events: none;">
+                <div style="position: fixed; top: 15px; left: 0; width: 100%; display: flex; justify-content: center; z-index: 2000; pointer-events: none;">
+                    <img id="main-app-logo" src="./assets/icons/logo.png" alt="Logo" style="width: 44px; height: 44px; border-radius: 50%; cursor: pointer; pointer-events: auto; object-fit: cover; box-shadow: 0 4px 15px rgba(0,0,0,0.08); transform-origin: center; transition: none;">
                 </div>
+            </div>
 
+            <div class="space-container main-feed" style="width: 100%; max-width: 600px; margin: 0 auto; height: 100%; display: flex; flex-direction: column;">
                 <div class="space-scroll-area" style="flex: 1; overflow-y: auto; padding-bottom: 85px;">
-                    <div style="margin-top: 15px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 20px; margin-bottom: 16px;">
-                            <h3 style="font-size: 17px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 8px;">✨ Відкриття дня</h3>
-                            <span id="open-discoveries-btn" style="font-size: 13px; color: var(--text-secondary); cursor: pointer; font-weight: 600; transition: 0.2s;">Більше</span>
-                        </div>
-                        <div id="discoveries-container" class="hide-scroll" style="display: flex; gap: 18px; overflow-x: auto; padding: 0 20px 10px 20px; scroll-behavior: smooth; -webkit-overflow-scrolling: touch;"></div>
-                    </div>
-
-                    <div style="margin-top: 25px; margin-bottom: 10px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 20px; margin-bottom: 16px;">
-                            <h3 style="font-size: 17px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 8px;"><i class="bi bi-people-fill" style="font-size: 18px;"></i> Колаборації</h3>
-                            <div style="display: flex; gap: 12px; align-items: center;">
-                                <span id="open-all-collabs-btn" style="font-size: 13px; color: var(--text-secondary); cursor: pointer; font-weight: 600;">Більше</span>
-                                <button class="icon-btn" id="add-collab-btn" style="margin: 0; padding: 0; font-size: 20px; color: var(--text-color);"><i class="bi bi-plus-square"></i></button>
-                            </div>
-                        </div>
+                    
+                    <div class="collaborations-wrapper" style="margin-top: 60px;">
                         <div id="collaborations-container" class="hide-scroll" style="display: flex; gap: 16px; overflow-x: auto; padding: 0 20px 10px 20px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;"></div>
                     </div>
 
-                    <div style="padding: 15px 20px 5px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color);">
-                        <div class="feed-filters" style="display: flex; gap: 10px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;">
-                            <button class="space-filter-btn active" style="flex-shrink: 0; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 14px; border: none; cursor: pointer; transition: 0.2s;">Всі пости</button>
-                            <button class="space-filter-btn" style="flex-shrink: 0; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 14px; border: none; cursor: pointer; transition: 0.2s;">В процесі 🛠️</button>
-                            <button class="space-filter-btn" style="flex-shrink: 0; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 14px; border: none; cursor: pointer; transition: 0.2s;">Потрібна критика 💬</button>
-                        </div>
-                        <button class="create-post-trigger icon-btn" style="margin: 0 0 0 10px; padding: 0; font-size: 22px; color: var(--text-color); flex-shrink: 0;"><i class="bi bi-plus-square"></i></button>
+                    <div style="padding: 10px 20px; display: flex; justify-content: flex-end;">
+                        <button class="create-post-trigger icon-btn" style="margin: 0; padding: 0; font-size: 22px; color: var(--text-color);"><i class="bi bi-plus-square"></i></button>
                     </div>
 
-                    <div class="feed-container" style="padding: 0 20px; padding-top: 15px;">
+                    <div class="feed-container posts-wrapper" id="posts-wrapper" style="padding: 0;">
                         <p style="text-align:center; color: var(--text-secondary); margin-top: 40px;">Завантаження...</p>
                     </div>
+
+                    <div class="discovery-card" id="discovery-block" style="display: none; padding: 24px 0;">
+                        <div id="discoveries-container" class="hide-scroll" style="display: flex; gap: 18px; overflow-x: auto; padding: 0 20px 10px 20px; scroll-behavior: smooth; -webkit-overflow-scrolling: touch;"></div>
+                    </div>
+
                 </div>
             </div>
         </section>

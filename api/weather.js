@@ -1,10 +1,13 @@
 export default async function handler(req, res) {
     // Беремо ключ із захищених змінних оточення Vercel
     const apiKey = process.env.WEATHER_API_KEY;
-    const city = "Kyiv";
     
-    // Формуємо посилання для запиту
-    const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}`;
+    // Точні координати міста Богуслав (Київська область, Обухівський район)
+    const lat = 49.5444;
+    const lon = 30.8764;
+    
+    // Формуємо посилання для запиту виключно за координатами
+    const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}`;
 
     try {
         const response = await fetch(url);

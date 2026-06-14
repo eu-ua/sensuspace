@@ -498,6 +498,37 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- ЛОГІКА ДЛЯ ВКАДКИ "ПРОСТІР" (ВСТАВЛЕННЯ ВІДКРИТТЯ) ---
+    const arrangeProstirFeed = () => {
+        const feedContainer = document.querySelector('.feed-container');
+        if (!feedContainer) return;
 
+        // Слухаємо зміни в стрічці (бо пости завантажуються з бази)
+        const observer = new MutationObserver(() => {
+            // Шукаємо підвантажені пости за класом .post-card
+            const posts = feedContainer.querySelectorAll('.post-card');
+            const discoveryBlock = document.getElementById('discovery-block');
+            
+            if (discoveryBlock && posts.length > 0) {
+                // Показуємо блок
+                discoveryBlock.style.display = 'block'; 
+                
+                // Якщо є мінімум 2 пости, ставимо після другого, інакше - після першого
+                if (posts.length >= 2) {
+                    posts[1].insertAdjacentElement('afterend', discoveryBlock);
+                } else {
+                    posts[0].insertAdjacentElement('afterend', discoveryBlock);
+                }
+                
+                // Зупиняємо спостереження, коли успішно перемістили
+                observer.disconnect(); 
+            }
+        });
+
+        // Запускаємо відстеження додавання постів
+        observer.observe(feedContainer, { childList: true });
+    };
+
+    arrangeProstirFeed();
 
 });
