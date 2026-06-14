@@ -482,11 +482,13 @@ document.addEventListener('DOMContentLoaded', () => {
         
         overlay.innerHTML = ''; 
 
-        for (let i = 0; i < 60; i++) {
+        // Робимо дощ рідкішим (25 крапель замість 60)
+        for (let i = 0; i < 25; i++) {
             const drop = document.createElement('div');
             drop.className = 'rain-drop';
             drop.style.left = Math.random() * 100 + 'vw';
-            drop.style.animationDuration = (Math.random() * 0.5 + 0.5) + 's'; 
+            // Трохи збільшуємо час падіння (було 0.5с, тепер від 0.7с до 1.3с)
+            drop.style.animationDuration = (Math.random() * 0.6 + 0.7) + 's'; 
             drop.style.animationDelay = Math.random() * 2 + 's';
             overlay.appendChild(drop);
         }
@@ -543,7 +545,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Запуск механізму
-    checkWeather();
+    checkWeather(); 
 
     // --- ЛОГІКА ДЛЯ ВКАДКИ "ПРОСТІР" (ВСТАВЛЕННЯ ВІДКРИТТЯ) ---
     const arrangeProstirFeed = () => {

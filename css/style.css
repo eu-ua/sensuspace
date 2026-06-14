@@ -100,40 +100,51 @@ body {
 }
 
 /* --- ПОГОДА (ДОЩ ТА БЛИСКАВКИ) --- */
-
-#weather-overlay {
-    position: absolute; /* Тепер дощ живе абсолютно відносно шапки */
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none; 
-    z-index: 1; /* Лежить під пончиком */
-    overflow: hidden; /* Обрізає краплі, які випадають за межі шапки */
-}
-
 .rain-drop {
     position: absolute;
-    background: rgba(255, 255, 255, 0.7);
-    width: 2px;
-    height: 15px;
-    top: -20px;
+    background: rgba(255, 255, 255, 0.6);
+    width: 1.5px; /* Тонша лінія */
+    height: 12px;
+    top: -15px;
+    border-radius: 2px;
+    transform-origin: bottom; /* ВАЖЛИВО: крапля розплющується відносно свого низу */
     animation: rain linear infinite;
 }
 
-/* МАГІЯ: На світлій темі робимо краплі сірими, щоб їх було видно на білому фоні */
+/* Колір крапель для світлої теми */
 [data-theme="light"] .rain-drop {
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.25);
 }
 
+/* Анімація падіння та розбивання */
 @keyframes rain {
-    0% { transform: translateY(0); opacity: 0; }
-    10% { opacity: 1; }
-    80% { opacity: 1; }
-    100% { transform: translateY(80px); opacity: 0; } /* Падає тільки на 80px (висоту шапки) і зникає */
+    0% { transform: translateY(0) scale(1, 1); opacity: 0; }
+    10% { opacity: 1; transform: translateY(10px) scale(1, 1); }
+    75% { transform: translateY(65px) scale(1, 1); opacity: 1; } /* Долітає до низу шапки */
+    85% { transform: translateY(65px) scale(4, 0.2); opacity: 0.6; } /* Розбивається (стає широкою і пласкою) */
+    100% { transform: translateY(65px) scale(5, 0); opacity: 0; } /* Повністю розчиняється */
 }
 
-/* ... далі йдуть стилі .lightning-bolt (їх не чіпайте, спалах має бути на весь екран) ... */
+.lightning-bolt {
+    position: absolute;
+    stroke: #ffea00; 
+    stroke-width: 3;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    filter: drop-shadow(0 0 5px #ffea00) drop-shadow(0 0 10px #ffea00);
+    opacity: 0;
+}
+
+.lightning-bolt.flash {
+    opacity: 1;
+    animation: fade-out 0.2s ease-out forwards;
+}
+
+@keyframes fade-out {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+}
 
 /* --- СУЧАСНИЙ UX ДЛЯ СТРІЧКИ (THREADS STYLE) --- */
 .main-feed {
