@@ -469,4 +469,35 @@ document.addEventListener('DOMContentLoaded', () => {
             logo.style.transform = 'rotate(0deg)';
         }
     });
+
+    async function checkWeather() {
+        try {
+            // Звертаємось до нашого власного безпечного маршруту
+            const response = await fetch('/api/weather');
+            const data = await response.json();
+            
+            const weatherId = data.weather[0].id;
+            console.log("Поточний ID погоди (безпечно):", weatherId);
+
+            // Якщо йде дощ (група 500-531)
+            if (weatherId >= 500 && weatherId < 600) {
+                window.startRain();
+            }
+
+            // Якщо гроза (група 200-232)
+            if (weatherId >= 200 && weatherId < 300) {
+                window.startRain();
+                setInterval(() => {
+                    if (Math.random() < 0.5) {
+                        window.triggerLightning();
+                    }
+                }, 4000);
+            }
+        } catch (e) { 
+            console.error("Помилка підключення до погоди:", e); 
+        }
+    }
+
+
+
 });
