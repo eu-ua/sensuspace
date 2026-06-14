@@ -470,21 +470,65 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // --- ГЕНЕРАТОР ДОЩУ ---
+    window.startRain = () => {
+        let overlay = document.getElementById('weather-overlay');
+        
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'weather-overlay';
+            document.body.appendChild(overlay);
+        }
+        
+        overlay.innerHTML = ''; 
+
+        for (let i = 0; i < 60; i++) {
+            const drop = document.createElement('div');
+            drop.className = 'rain-drop';
+            drop.style.left = Math.random() * 100 + 'vw';
+            drop.style.animationDuration = (Math.random() * 0.5 + 0.5) + 's'; 
+            drop.style.animationDelay = Math.random() * 2 + 's';
+            overlay.appendChild(drop);
+        }
+    };
+
+    // --- ГЕНЕРАТОР БЛИСКАВКИ ---
+    window.triggerLightning = () => {
+        const flash = document.createElement('div');
+        flash.style.position = 'fixed';
+        flash.style.top = '0';
+        flash.style.left = '0';
+        flash.style.width = '100vw';
+        flash.style.height = '100vh';
+        flash.style.backgroundColor = 'white';
+        flash.style.opacity = '0.85';
+        flash.style.zIndex = '999998';
+        flash.style.pointerEvents = 'none';
+        
+        document.body.appendChild(flash);
+        
+        setTimeout(() => {
+            flash.style.transition = 'opacity 0.4s ease-out';
+            flash.style.opacity = '0';
+            setTimeout(() => flash.remove(), 400);
+        }, 50);
+    };
+
+    // --- ПЕРЕВІРКА ПОГОДИ З СЕРВЕРА ---
     async function checkWeather() {
         try {
-            // Звертаємось до нашого власного безпечного маршруту
             const response = await fetch('/api/weather');
             const data = await response.json();
             
             const weatherId = data.weather[0].id;
             console.log("Поточний ID погоди (безпечно):", weatherId);
 
-            // Якщо йде дощ (група 500-531)
+            // Якщо йде дощ
             if (weatherId >= 500 && weatherId < 600) {
                 window.startRain();
             }
 
-            // Якщо гроза (група 200-232)
+            // Якщо гроза
             if (weatherId >= 200 && weatherId < 300) {
                 window.startRain();
                 setInterval(() => {
@@ -498,6 +542,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Запуск механізму
     checkWeather();
 
     // --- ЛОГІКА ДЛЯ ВКАДКИ "ПРОСТІР" (ВСТАВЛЕННЯ ВІДКРИТТЯ) ---
