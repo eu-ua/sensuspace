@@ -100,35 +100,29 @@ body {
 }
 
 /* --- ПОГОДА (ДОЩ ТА БЛИСКАВКИ) --- */
-/* Сама крапля */
 .rain-drop {
     position: absolute;
     background: rgba(255, 255, 255, 0.6);
-    width: 1.5px; 
+    width: 1.5px; /* Тонша лінія */
     height: 12px;
     top: -15px;
     border-radius: 2px;
-    transform-origin: bottom center; /* ВАЖЛИВО: крапля розплющується чітко відносно свого низу */
+    transform-origin: bottom; /* ВАЖЛИВО: крапля розплющується відносно свого низу */
     animation: rain linear infinite;
 }
 
+/* Колір крапель для світлої теми */
 [data-theme="light"] .rain-drop {
     background: rgba(0, 0, 0, 0.25);
 }
 
-/* Анімація падіння та видимого розбивання */
+/* Анімація падіння та розбивання */
 @keyframes rain {
     0% { transform: translateY(0) scale(1, 1); opacity: 0; }
     10% { opacity: 1; transform: translateY(10px) scale(1, 1); }
-    
-    /* 1. Крапля долітає рівно до низу шапки (60px) */
-    80% { transform: translateY(63px) scale(1, 1); opacity: 1; } 
-    
-    /* 2. Різко розплющується в ширину (ширина стає ~22px, висота майже нуль) */
-    90% { transform: translateY(63px) scale(15, 0.1); opacity: 0.8; } 
-    
-    /* 3. Розчиняється в сторони */
-    100% { transform: translateY(63px) scale(25, 0); opacity: 0; } 
+    75% { transform: translateY(65px) scale(1, 1); opacity: 1; } /* Долітає до низу шапки */
+    85% { transform: translateY(65px) scale(4, 0.2); opacity: 0.6; } /* Розбивається (стає широкою і пласкою) */
+    100% { transform: translateY(65px) scale(5, 0); opacity: 0; } /* Повністю розчиняється */
 }
 
 .lightning-bolt {
