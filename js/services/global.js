@@ -306,7 +306,6 @@ document.addEventListener('click', async (e) => {
         window.previousScreenForProfile = null;
     }
 
-    // --- ЛОГІКА ПІДПИСОК ТА СПОВІЩЕНЬ ПРО НИХ ---
     if (e.target.closest('#follow-user-btn')) {
         const followBtn = e.target.closest('#follow-user-btn');
         const myUid = auth.currentUser?.uid;
@@ -326,7 +325,6 @@ document.addEventListener('click', async (e) => {
                 await setDoc(myRef, { following: arrayUnion(window.currentViewedUserId) }, { merge: true });
                 await setDoc(targetRef, { followers: arrayUnion(myUid) }, { merge: true });
                 
-                // ГЕНЕРАЦІЯ СПОВІЩЕННЯ ПРО НОВУ ПІДПИСКУ
                 await addDoc(collection(db, `users/${window.currentViewedUserId}/notifications`), {
                     type: 'follow', fromUserId: myUid, createdAt: serverTimestamp(), read: false
                 });
@@ -361,4 +359,114 @@ document.addEventListener('click', async (e) => {
         const navBtn = document.querySelector('.nav-btn[data-screen="screen-messages"]');
         if(navBtn) navBtn.classList.add('active');
     }
+});
+
+// ============================================================================
+// --- ЛОГІКА ІНТЕРАКТИВНОГО ЛОГОТИПА (ПОНЧИКА) ТА СПОВІЩЕНЬ ---
+// ============================================================================
+document.addEventListener('DOMContentLoaded', () => {
+    const logo = document.getElementById('main-app-logo');
+    if (!logo) return;
+
+    let pressTimer;
+    let isLongPress = false;
+
+    // Спеціальна функція для відкриття сповіщень
+    const openNotifications = () => {
+        if (navigator.vibrate) navigator.vibrate(40);
+        const notifModal = document.getElementById('notifications-modal');
+        if (notifModal) notifModal.classList.remove('hidden');
+        
+        // Відправляємо подію, щоб feed.js позначив сповіщення як прочитані (якщо потрібно)
+        window.dispatchEvent(new Event('notificationsOpened'));
+    };
+
+    // 1. КЛІК (ЛКМ) -> ПОВЕРНЕННЯ НА ПОЧАТОК СТРІЧКИ
+    logo.addEventListener('click', (e) => {
+        if (!isLongPress) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    });
+
+    // 2. ПРАВИЙ КЛІК (ПКМ) -> ВІДКРИТТЯ СПОВІЩЕНЬ
+    logo.addEventListener('contextmenu', (e) => {
+        e.preventDefault();  // Блокуємо стандартне системне меню браузера
+        e.stopPropagation(); 
+        openNotifications();
+    });
+
+    // 3. ДОВГЕ ЗАТИСКАННЯ (МОБІЛЬНІ ПРИСТРОЇ) -> ВІДКРИТТЯ СПОВІЩЕНЬ
+    logo.addEventListener('touchstart', (e) => {
+        isLongPress = false;
+        pressTimer = setTimeout(() => {
+            isLongPress = true;
+            openNotifications();
+        }, 500); // Пів секунди на затискання
+    }, { passive: true });
+
+    logo.addEventListener('touchend', (e) => {
+        clearTimeout(pressTimer);
+        if (isLongPress) e.preventDefault(); // Скасовуємо звичайний клік, якщо це був довгий тап
+    });
+
+    logo.addEventListener('touchmove', () => {
+        clearTimeout(pressTimer); // Якщо палець посунувся, скасовуємо довгий тап
+    }, { passive: true });
+
+    // 4. PULL-TO-REFRESH (ПОТЯГНУТИ ВНИЗ ДЛЯ ОНОВЛЕННЯ З ОБЕРТАННЯМ)
+    let startY = 0;
+    let isPulling = false;
+
+    document.addEventListener('touchstart', (e) => {
+        // Запускаємо логіку тільки якщо користувач знаходиться на самому верху сторінки
+        if (window.scrollY === 0) {
+            startY = e.touches[0].clientY;
+            isPulling = true;
+            logo.style.transition = 'none'; // Вимикаємо плавність, щоб пончик миттєво реагував
+        }
+    }, { passive: true });
+
+    document.addEventListener('touchmove', (e) => {
+        if (!isPulling || window.scrollY > 0) return;
+        
+        const currentY = e.touches[0].clientY;
+        const diff = currentY - startY;
+
+        if (diff > 0 && diff < 250) { 
+            // Крутимо пончик. Множник 2.5 робить обертання динамічнішим
+            logo.style.transform = `rotate(${diff * 2.5}deg)`;
+        }
+    }, { passive: true });
+
+    document.addEventListener('touchend', (e) => {
+        if (!isPulling) return;
+        isPulling = false;
+
+        const endY = e.changedTouches[0].clientY;
+        const diff = endY - startY;
+
+        // Якщо потягнули достатньо сильно
+        if (diff > 80) { 
+            if (navigator.vibrate) navigator.vibrate(30);
+            
+            // Анімація швидкого обертання
+            logo.style.transition = 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+            logo.style.transform = `rotate(360deg)`;
+            
+            // Симулюємо оновлення стрічки
+            const activeFilter = document.querySelector('.space-filter-btn.active') || document.querySelector('.space-filter-btn');
+            if (activeFilter) activeFilter.click();
+
+            // Повертаємо логотип у початковий стан
+            setTimeout(() => {
+                logo.style.transition = 'none';
+                logo.style.transform = 'rotate(0deg)';
+            }, 550);
+            
+        } else {
+            // Якщо потягнули слабо - просто плавно повертаємо
+            logo.style.transition = 'transform 0.3s ease-out';
+            logo.style.transform = 'rotate(0deg)';
+        }
+    });
 });

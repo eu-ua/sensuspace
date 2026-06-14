@@ -2,7 +2,7 @@ import { db, auth } from '../firebase-config.js';
 import { collection, addDoc, doc, updateDoc, getDoc, getDocs, setDoc, deleteDoc, query, orderBy, limit, onSnapshot, serverTimestamp, arrayUnion, arrayRemove, where, increment } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const DEFAULT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='12' fill='%23e0e0e0'/><path d='M12 14c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4zm0-2c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z' fill='%23999999'/></svg>";
-const notifSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+const notifSound = new Audio('../../sounds/notification.mp3');
 
 const userCache = {}; 
 window.currentEditPostId = null;
@@ -43,6 +43,16 @@ document.addEventListener('DOMContentLoaded', () => {
     let commentsUnsubscribe = null;
     let notificationsUnsubscribe = null;
 
+    // Обробка відміток "Прочитано" через глобальну подію з global.js
+    window.addEventListener('notificationsOpened', () => {
+        const user = auth.currentUser;
+        if (user) {
+            getDocs(query(collection(db, `users/${user.uid}/notifications`), where("read", "==", false))).then(snap => {
+                snap.forEach(d => updateDoc(doc(db, `users/${user.uid}/notifications`, d.id), { read: true }));
+            });
+        }
+    });
+
     auth.onAuthStateChanged(user => {
         if(user) {
             onSnapshot(doc(db, "users", user.uid), (docSnap) => {
@@ -52,12 +62,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // --- СИСТЕМА СПОВІЩЕНЬ ---
+            // --- СИСТЕМА СПОВІЩЕНЬ: ТЕПЕР НА ПОНЧИКУ ---
             if (notificationsUnsubscribe) notificationsUnsubscribe();
             notificationsUnsubscribe = onSnapshot(query(collection(db, `users/${user.uid}/notifications`), orderBy("createdAt", "desc"), limit(40)), (snap) => {
                 const container = document.getElementById('notifications-list-container');
-                const bellBtn = document.getElementById('open-notifications-btn');
-                if (!container || !bellBtn) return;
+                const appLogo = document.getElementById('main-app-logo'); // ЗМІНЕНО: тепер шукаємо логотип
+                if (!container || !appLogo) return;
 
                 let unreadCount = 0;
                 let playSound = false;
@@ -107,17 +117,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (playSound) notifSound.play().catch(e=>console.log(e));
 
-                let badge = bellBtn.querySelector('.notif-badge');
+                // ДОДАЄМО МАРКЕР НА ПОНЧИК
+                let badge = appLogo.querySelector('.notif-badge');
                 if (unreadCount > 0) {
                     if (!badge) {
-                        bellBtn.style.position = 'relative';
                         badge = document.createElement('div');
                         badge.className = 'notif-badge';
                         badge.style = 'position:absolute; top:-2px; right:-2px; background:#ff4444; color:#fff; font-size:10px; font-weight:bold; width:16px; height:16px; border-radius:50%; display:flex; align-items:center; justify-content:center; border: 2px solid var(--bg-color); pointer-events: none;';
-                        bellBtn.appendChild(badge);
+                        appLogo.appendChild(badge);
                     }
                     badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
-                } else if (badge) badge.remove();
+                } else if (badge) {
+                    badge.remove();
+                }
             });
         }
     });
@@ -581,16 +593,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('click', async (e) => {
         const user = auth.currentUser;
 
-        // ВІДКРИТТЯ СПОВІЩЕНЬ І ПОЗНАЧЕННЯ ПРОЧИТАНИМИ
-        if (e.target.closest('#open-notifications-btn')) {
-            document.getElementById('notifications-modal').classList.remove('hidden');
-            if (user) {
-                getDocs(query(collection(db, `users/${user.uid}/notifications`), where("read", "==", false))).then(snap => {
-                    snap.forEach(d => updateDoc(doc(db, `users/${user.uid}/notifications`, d.id), { read: true }));
-                });
-            }
-            return;
-        }
+        if (e.target.closest('#close-notifications-btn')) document.getElementById('notifications-modal').classList.add('hidden');
 
         if (e.target.closest('.post-menu-trigger-btn')) {
             const dropdown = e.target.closest('.post-menu-trigger-btn').nextElementSibling; 
@@ -608,18 +611,13 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // РЕПОСТИ
         if (e.target.closest('.repost-post-btn')) {
             if (!user) return;
             const postId = e.target.closest('.repost-post-btn').dataset.postId;
             const existingRepost = cachedPosts.find(p => p.data().originalPostId === postId && p.data().authorId === user.uid && p.data().type === "repost");
-            
-            if (existingRepost) {
-                await deleteDoc(doc(db, "posts", existingRepost.id));
-            } else {
+            if (existingRepost) await deleteDoc(doc(db, "posts", existingRepost.id));
+            else {
                 await addDoc(collection(db, "posts"), { type: "repost", originalPostId: postId, authorId: user.uid, createdAt: serverTimestamp() });
-                
-                // СПОВІЩЕННЯ ПРО РЕПОСТ
                 const origSnap = await getDoc(doc(db, "posts", postId));
                 if (origSnap.exists() && origSnap.data().authorId !== user.uid) {
                     await addDoc(collection(db, `users/${origSnap.data().authorId}/notifications`), {
@@ -662,7 +660,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // КОМЕНТАРІ
         if (e.target.closest('#submit-post-comment-btn')) {
             const input = document.getElementById('post-comment-input');
             const text = input.value.trim();
@@ -680,7 +677,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 commentedBy: arrayUnion(user.uid) 
             });
 
-            // СПОВІЩЕННЯ ПРО КОМЕНТАР
             const origSnap = await getDoc(doc(db, "posts", targetPostId));
             if (origSnap.exists() && origSnap.data().authorId !== user.uid) {
                 await addDoc(collection(db, `users/${origSnap.data().authorId}/notifications`), {
@@ -768,7 +764,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (!e.target.closest('.reaction-picker-container')) document.querySelectorAll('.post-reaction-picker').forEach(p => p.classList.add('hidden'));
 
-        // РЕАКЦІЇ
         if (e.target.classList.contains('emoji-btn')) {
             if (!user) return;
             const emoji = e.target.dataset.emoji;
@@ -785,8 +780,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const currentReactionUsers = reactions[emoji] || [];
             if (!currentReactionUsers.includes(user.uid)) {
                 updates[`reactions.${emoji}`] = arrayUnion(user.uid);
-                
-                // СПОВІЩЕННЯ ПРО РЕАКЦІЮ
                 if (postSnap.data().authorId !== user.uid) {
                     await addDoc(collection(db, `users/${postSnap.data().authorId}/notifications`), {
                         type: 'reaction', emoji: emoji, postId: postId, fromUserId: user.uid, createdAt: serverTimestamp(), read: false
@@ -796,8 +789,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (Object.keys(updates).length > 0) await updateDoc(postRef, updates);
         }
 
-        // ІНШІ ВІКНА ТА КНОПКИ
-        if (e.target.closest('#close-notifications-btn')) document.getElementById('notifications-modal').classList.add('hidden');
         if (e.target.closest('#open-discoveries-btn')) document.getElementById('discoveries-modal').classList.remove('hidden');
         if (e.target.closest('#close-discoveries-btn')) document.getElementById('discoveries-modal').classList.add('hidden');
         if (e.target.closest('#open-all-collabs-btn')) { renderAllCollabs(''); document.getElementById('all-collabs-modal').classList.remove('hidden'); }

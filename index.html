@@ -106,7 +106,7 @@
         <div id="auth-modal" class="auth-modal-overlay hidden">
             <div class="auth-container">
                 <button id="close-auth-btn" class="close-modal-btn"><i class="bi bi-x-lg"></i></button>
-                <div class="auth-header-brand"><h2>Bublic</h2><p>Простір для творців</p></div>
+                <div class="auth-header-brand"><h2>Bublic</h2><p>Сміливість бути собою</p></div>
                 <div class="auth-tabs">
                     <button class="auth-tab-btn active" id="tab-login">Вхід</button>
                     <button class="auth-tab-btn" id="tab-register">Реєстрація</button>
@@ -121,12 +121,17 @@
         </div>
 
         <section id="screen-home" class="app-screen active">
+            <!-- Головний логотип Bublic -->
+        <div style="position: fixed; top: 15px; left: 0; width: 100%; display: flex; justify-content: center; z-index: 2000; pointer-events: none;">
+    
+            <div id="main-app-logo" style="position: relative; display: flex; justify-content: center; align-items: center; font-size: 26px; cursor: pointer; user-select: none; width: 44px; height: 44px; border-radius: 50%; pointer-events: auto; -webkit-tap-highlight-color: transparent; transform-origin: center; line-height: 1; background: var(--bg-color, #fff); box-shadow: 0 4px 15px rgba(0,0,0,0.08);">
+                🍩
+            </div>
+
+        </div>
             <div class="space-container" style="width: 100%; max-width: 600px; margin: 0 auto; height: 100%; display: flex; flex-direction: column;">
                 <div style="flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; width: 100%; box-sizing: border-box;">
                     <h2 style="margin: 0; font-size: 24px; font-weight: 700; text-align: left; color: var(--text-color);">Простір</h2>
-                    <div style="display: flex; gap: 15px; align-items: center;">
-                        <button id="open-notifications-btn" style="margin: 0; padding: 0; color: var(--text-color); background: none; border: none; font-size: 22px; cursor: pointer;"><i class="bi bi-bell"></i></button>
-                    </div>
                 </div>
 
                 <div class="space-scroll-area" style="flex: 1; overflow-y: auto; padding-bottom: 85px;">
@@ -477,6 +482,26 @@
                     <input type="text" id="chat-inner-search-input" placeholder="Пошук повідомлень..." autocomplete="off" style="width: 100%; padding: 10px 18px; border-radius: 20px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-color); outline: none; font-size: 14px;">
                 </div>
                 <div id="chat-messages-container" style="flex-grow: 1; overflow-y: auto; padding: 20px 15px; display: flex; flex-direction: column; gap: 16px; background: var(--bg-color);"></div>
+                
+                <div id="chat-messages-container" style="flex-grow: 1; overflow-y: auto; padding: 20px 15px; display: flex; flex-direction: column; gap: 16px; background: var(--bg-color);"></div>
+                
+                <div id="chat-action-preview-container" class="hidden" style="padding: 10px 15px; background: var(--bg-secondary); border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                    <div style="flex: 1; overflow: hidden;">
+                        <div id="chat-action-title" style="font-size: 13px; font-weight: 700; color: var(--accent-color); margin-bottom: 2px;">Редагування</div>
+                        <div id="chat-action-text" style="font-size: 14px; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Текст...</div>
+                    </div>
+                    <button id="chat-cancel-action-btn" class="icon-btn" style="color: var(--text-secondary);"><i class="bi bi-x-lg"></i></button>
+                </div>
+                
+                <div id="chat-media-preview-container" class="hidden" style="padding: 10px 15px; background: var(--bg-secondary); border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 10px; overflow: hidden;">
+                        <i class="bi bi-image" style="color: var(--accent-color); font-size: 20px;"></i>
+                        <span id="chat-media-name" style="font-size: 14px; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Файл</span>
+                    </div>
+                    <button id="chat-remove-media-btn" class="icon-btn" style="color: #ff4444;"><i class="bi bi-trash"></i></button>
+                </div>
+                <div class="chat-room-input-area" style="flex-shrink: 0; padding: 10px 15px; display: flex; gap: 10px; align-items: center; border-top: 1px solid var(--border-color); background: var(--bg-color); padding-bottom: calc(15px + env(safe-area-inset-bottom));">
+                
                 <div class="chat-room-input-area" style="flex-shrink: 0; padding: 10px 15px; display: flex; gap: 10px; align-items: center; border-top: 1px solid var(--border-color); background: var(--bg-color); padding-bottom: calc(15px + env(safe-area-inset-bottom));">
                     <button id="chat-attach-btn" class="icon-btn" style="font-size: 22px; color: var(--text-secondary); background: none; border: none; cursor: pointer; padding: 0 5px;"><i class="bi bi-paperclip"></i></button>
                     <input type="file" id="chat-media-input" accept="image/*,video/*" hidden>
